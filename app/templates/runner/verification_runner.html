@@ -1,0 +1,657 @@
+{% extends 'base.html' %}
+
+{% block title %}Account Verification{% endblock %}
+{% block header_title %}Account Verification{% endblock %}
+
+{% block sidebar %}
+<!-- Runner Sidebar -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <a href="{{ url_for('main.dashboard') }}" class="sidebar-brand">
+            <div class="brand-logo">G</div>
+            <span class="brand-text">GrabItDone</span>
+        </a>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-label">Main</div>
+            <ul class="nav-items">
+                <li class="nav-item">
+                    <a href="{{ url_for('main.dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                        <i class="nav-icon fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('main.available_errands_runner') }}" class="nav-link {% if request.endpoint == 'available_errands_runner' %}active{% endif %}">
+                        <i class="nav-icon fas fa-search"></i>
+                        <span>Available Errands</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('main.my_errands_runner') }}" class="nav-link {% if request.endpoint == 'my_errands_runner' %}active{% endif %}">
+                        <i class="nav-icon fas fa-running"></i>
+                        <span>My Errands</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('main.earnings_runner') }}" class="nav-link {% if request.endpoint == 'earnings_runner' %}active{% endif %}">
+                        <i class="nav-icon fas fa-dollar-sign"></i>
+                        <span>Earnings</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('main.runner_errand_history') }}" class="nav-link {% if request.endpoint == 'runner_errand_history' %}active{% endif %}">
+                        <i class="nav-icon fas fa-history"></i>
+                        <span>History</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Account</div>
+            <ul class="nav-items">
+                <li class="nav-item">
+                    <a href="{{ url_for('main.profile') }}" class="nav-link {% if request.endpoint == 'profile' %}active{% endif %}">
+                        <i class="nav-icon fas fa-user"></i>
+                        <span>Profile Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('main.verification_runner') }}" class="nav-link {% if request.endpoint == 'verification_runner' %}active{% endif %}">
+                        <i class="nav-icon fas fa-id-card"></i>
+                        <span>Account Verification</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-card">
+            <div class="user-avatar">
+                {{ session.get('username', 'U')[0]|upper }}
+            </div>
+            <div class="user-info">
+                <div class="user-name">{{ session.get('username', 'User') }}</div>
+                <div class="user-role">Runner</div>
+            </div>
+            <a href="{{ url_for('main.logout') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </div>
+</aside>
+{% endblock %}
+
+{% block content %}
+<style>
+    .verification-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .verification-status {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 2rem;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        margin-bottom: 2rem;
+    }
+
+    .status-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        flex-shrink: 0;
+    }
+
+    .status-icon.pending {
+        background: var(--warning-light);
+        color: var(--warning);
+    }
+
+    .status-icon.verified {
+        background: var(--success-light);
+        color: var(--success);
+    }
+
+    .status-icon.not-verified {
+        background: var(--error-light);
+        color: var(--error);
+    }
+
+    .status-content {
+        flex: 1;
+    }
+
+    .status-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .status-description {
+        color: var(--text-secondary);
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+
+    .verification-steps {
+        display: grid;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .step-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        transition: var(--transition);
+    }
+
+    .step-card:hover {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .step-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .step-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .step-description {
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .requirements-list {
+        background: var(--background);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .requirement-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0;
+        color: var(--text-secondary);
+    }
+
+    .requirement-item i {
+        color: var(--success);
+        font-size: 0.9rem;
+    }
+
+    .upload-area {
+        border: 2px dashed var(--border);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        text-align: center;
+        transition: var(--transition);
+        cursor: pointer;
+        margin-bottom: 1rem;
+    }
+
+    .upload-area:hover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .upload-area.dragover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .upload-icon {
+        font-size: 3rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+
+    .upload-text {
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+
+    .upload-hint {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .file-preview {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius);
+        margin-bottom: 1rem;
+    }
+
+    .file-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-light);
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        flex-shrink: 0;
+    }
+
+    .file-info {
+        flex: 1;
+    }
+
+    .file-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .file-size {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .remove-file {
+        background: none;
+        border: none;
+        color: var(--error);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: var(--radius);
+    }
+
+    .remove-file:hover {
+        background: var(--error-light);
+    }
+
+    .verification-note {
+        background: var(--warning-light);
+        border: 1px solid var(--warning);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .note-title {
+        font-weight: 600;
+        color: var(--warning-dark);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .note-content {
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+        .verification-status {
+            flex-direction: column;
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .step-card {
+            padding: 1.5rem;
+        }
+
+        .step-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+        }
+
+        .upload-area {
+            padding: 1.5rem;
+        }
+
+        .btn-group {
+            flex-direction: column;
+        }
+
+        .btn-group .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="verification-container">
+    <!-- Verification Status -->
+    <div class="verification-status">
+        {% if user.verified %}
+        <div class="status-icon verified">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="status-content">
+            <h2 class="status-title">Account Verified</h2>
+            <p class="status-description">
+                Your account has been successfully verified. You can now accept errands and start earning.
+            </p>
+            <div class="badge badge-success" style="font-size: 1rem;">Verified Runner</div>
+        </div>
+        {% elif user.verification_status == 'pending' %}
+        <div class="status-icon pending">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="status-content">
+            <h2 class="status-title">Verification Under Review</h2>
+            <p class="status-description">
+                Your verification request is being reviewed by our team. This usually takes 24-48 hours.
+                You'll be notified once your account is verified.
+            </p>
+            <div class="badge badge-warning" style="font-size: 1rem;">Pending Review</div>
+        </div>
+        {% else %}
+        <div class="status-icon not-verified">
+            <i class="fas fa-id-card"></i>
+        </div>
+        <div class="status-content">
+            <h2 class="status-title">Account Verification Required</h2>
+            <p class="status-description">
+                To start accepting errands and earning money, you need to verify your account. 
+                Please complete the verification process below.
+            </p>
+            <div class="badge badge-error" style="font-size: 1rem;">Not Verified</div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if not user.verified and user.verification_status != 'pending' %}
+    <!-- Verification Steps -->
+    <div class="verification-steps">
+        <!-- Step 1: Personal Information -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <h3 class="step-title">Personal Information</h3>
+            </div>
+            <p class="step-description">
+                Ensure your profile information is complete and accurate. This helps build trust with clients.
+            </p>
+            <div class="requirements-list">
+                <div class="requirement-item">
+                    <i class="fas fa-check"></i>
+                    <span>Complete profile information</span>
+                </div>
+                <div class="requirement-item">
+                    <i class="fas fa-check"></i>
+                    <span>Valid phone number</span>
+                </div>
+                <div class="requirement-item">
+                    <i class="fas fa-check"></i>
+                    <span>Current address</span>
+                </div>
+            </div>
+            <a href="{{ url_for('main.profile') }}" class="btn btn-secondary">
+                <i class="fas fa-user-edit"></i>
+                Update Profile
+            </a>
+        </div>
+
+        <!-- Step 2: Identity Verification -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <h3 class="step-title">Identity Verification</h3>
+            </div>
+            <p class="step-description">
+                Upload a clear photo of your government-issued ID for identity verification.
+            </p>
+            
+            <form id="verificationForm" method="POST" enctype="multipart/form-data">
+                <div class="requirements-list">
+                    <div class="requirement-item">
+                        <i class="fas fa-check"></i>
+                        <span>Government-issued ID (Passport, Driver's License, etc.)</span>
+                    </div>
+                    <div class="requirement-item">
+                        <i class="fas fa-check"></i>
+                        <span>Clear and readable photo</span>
+                    </div>
+                    <div class="requirement-item">
+                        <i class="fas fa-check"></i>
+                        <span>File size less than 5MB</span>
+                    </div>
+                </div>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">
+                        <strong>Click to upload</strong> or drag and drop
+                    </div>
+                    <div class="upload-hint">
+                        PNG, JPG, PDF up to 5MB
+                    </div>
+                    <input type="file" class="file-input" id="idDocument" name="id_document" accept=".jpg,.jpeg,.png,.pdf" required>
+                </div>
+
+                <div id="filePreview" style="display: none;">
+                    <div class="file-preview">
+                        <div class="file-icon">
+                            <i class="fas fa-file"></i>
+                        </div>
+                        <div class="file-info">
+                            <div class="file-name" id="fileName">document.jpg</div>
+                            <div class="file-size" id="fileSize">2.1 MB</div>
+                        </div>
+                        <button type="button" class="remove-file" id="removeFile">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Additional Information -->
+                <div class="step-header" style="margin-top: 2rem;">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Additional Information</h3>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="vehicle_type" class="form-label">Vehicle Type (if applicable)</label>
+                    <select class="form-select" id="vehicle_type" name="vehicle_type">
+                        <option value="">Select vehicle type</option>
+                        <option value="bicycle">Bicycle</option>
+                        <option value="motorcycle">Motorcycle</option>
+                        <option value="car">Car</option>
+                        <option value="public_transport">Public Transport</option>
+                        <option value="walking">Walking</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="verification_notes" class="form-label">Additional Notes (Optional)</label>
+                    <textarea class="form-textarea" id="verification_notes" name="verification_notes" 
+                              placeholder="Any additional information that might help with verification..." 
+                              rows="4"></textarea>
+                </div>
+
+                <!-- Verification Note -->
+                <div class="verification-note">
+                    <div class="note-title">
+                        <i class="fas fa-info-circle"></i>
+                        Important Information
+                    </div>
+                    <div class="note-content">
+                        <p>• Your personal information is secure and will only be used for verification purposes</p>
+                        <p>• Verification typically takes 24-48 hours</p>
+                        <p>• You'll receive a notification once your account is verified</p>
+                        <p>• Once verified, you can start accepting errands immediately</p>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i>
+                        Submit for Verification
+                    </button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Dashboard
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% elif user.verification_status == 'pending' %}
+    <!-- Pending Verification Message -->
+    <div class="card">
+        <div class="card-body" style="text-align: center; padding: 3rem;">
+            <div style="font-size: 4rem; color: var(--warning); margin-bottom: 1rem;">
+                <i class="fas fa-clock"></i>
+            </div>
+            <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Verification in Progress</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.6;">
+                Your verification request has been submitted and is currently under review.<br>
+                Our team will process your application within 24-48 hours.
+            </p>
+            <div class="btn-group" style="justify-content: center;">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                    <i class="fas fa-home"></i>
+                    Return to Dashboard
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('idDocument');
+    const filePreview = document.getElementById('filePreview');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const removeFile = document.getElementById('removeFile');
+
+    // File upload handling
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+        
+        fileInput.addEventListener('change', handleFileSelect);
+    }
+
+    function handleFileSelect() {
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            filePreview.style.display = 'block';
+        }
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    if (removeFile) {
+        removeFile.addEventListener('click', () => {
+            fileInput.value = '';
+            filePreview.style.display = 'none';
+        });
+    }
+
+    // Form validation
+    const form = document.getElementById('verificationForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!fileInput.files.length) {
+                e.preventDefault();
+                alert('Please upload your ID document before submitting.');
+                return false;
+            }
+            
+            const file = fileInput.files[0];
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                e.preventDefault();
+                alert('File size must be less than 5MB.');
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.disabled = true;
+        });
+    }
+});
+</script>
+{% endblock %}

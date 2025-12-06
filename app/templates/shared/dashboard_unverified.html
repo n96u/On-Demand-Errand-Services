@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Unverified{% endblock %}
+{% block header_title %}Status - Unverified{% endblock %}
+
+{% block content %}
+<style>
+    .verification-prompt {
+        max-width: 600px;
+        margin: 3rem auto;
+        padding: 2rem;
+        text-align: center;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .verification-icon {
+        font-size: 4rem;
+        color: var(--warning);
+        margin-bottom: 1rem;
+    }
+    
+    .verification-prompt h2 {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+    
+    .verification-prompt p {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        font-weight: 600;
+        margin: 1rem 0;
+    }
+    
+    .status-pending {
+        background: var(--warning-light);
+        color: var(--warning-dark);
+    }
+    
+    .status-rejected {
+        background: var(--error-light);
+        color: var(--error-dark);
+    }
+    
+    .status-not-requested {
+        background: var(--info-light);
+        color: var(--info-dark);
+    }
+</style>
+
+<div class="verification-prompt">
+    <div class="verification-icon">
+        <i class="fas fa-user-shield"></i>
+    </div>
+    
+    <h2>Account Verification Required</h2>
+    
+    {% if user.verification_status == 'pending' %}
+        <div class="status-badge status-pending">
+            <i class="fas fa-clock"></i> Verification Pending
+        </div>
+        <p>Your verification request is under review. This usually takes 24-48 hours.</p>
+        <p>You'll be notified once your account is verified and you can start accepting errands.</p>
+        
+    {% elif user.verification_status == 'rejected' %}
+        <div class="status-badge status-rejected">
+            <i class="fas fa-exclamation-circle"></i> Verification Rejected
+        </div>
+        <p>Your previous verification request was rejected.</p>
+        {% if user.rejection_reason %}
+            <div style="background: var(--background); padding: 1rem; border-radius: var(--radius); margin: 1rem 0; text-align: left;">
+                <strong>Reason:</strong> {{ user.rejection_reason }}
+            </div>
+        {% endif %}
+        <p>Please submit a new verification request with corrected documents.</p>
+        <a href="{{ url_for('main.verification') }}" class="btn btn-primary">
+            <i class="fas fa-redo"></i> Re-submit Verification
+        </a>
+        
+    {% else %}
+        <div class="status-badge status-not-requested">
+            <i class="fas fa-id-card"></i> Not Verified
+        </div>
+        <p>You need to verify your account before you can accept errands and start earning.</p>
+        <p>Verification helps build trust with clients and ensures a safe community.</p>
+        <a href="{{ url_for('main.verification') }}" class="btn btn-primary">
+            <i class="fas fa-shield-alt"></i> Start Verification
+        </a>
+    {% endif %}
+    
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+        <p style="font-size: 0.9rem; color: var(--text-muted);">
+            <i class="fas fa-info-circle"></i>
+            You can still update your profile and browse available errands, but cannot accept them until verified.
+        </p>
+    </div>
+</div>
+{% endblock %}

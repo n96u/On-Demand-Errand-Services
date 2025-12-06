@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+
+{% block title %}Wallet Management - Admin{% endblock %}
+{% block header_title %}Wallet Management Dashboard{% endblock %}
+
+{% block content %}
+<style>
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.5rem;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.table-container {
+    background: var(--surface);
+    border-radius: 12px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    margin-bottom: 2rem;
+}
+
+/* ✅ STABLE GRID */
+.table-header,
+.table-row {
+    display: grid;
+    grid-template-columns:
+        70px
+        110px
+        minmax(160px, 1.2fr)
+        minmax(120px, 1fr)
+        minmax(130px, 1fr)
+        minmax(220px, 2fr)
+        120px;
+    padding: 1rem 1.5rem;
+    align-items: center;
+}
+
+.table-header {
+    background: var(--primary-light);
+    font-weight: 600;
+}
+
+.table-row {
+    border-bottom: 1px solid var(--border);
+}
+
+.table-row:hover {
+    background: var(--background);
+}
+
+.table-header > div,
+.table-row > div {
+    padding: 0.25rem 0.5rem;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.user-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name { font-weight: 600; }
+.user-role { font-size: 0.8rem; color: var(--text-muted); }
+
+/* ✅ FIXED TYPE + AMOUNT */
+.type-cell,
+.amount-cell {
+    min-width: 120px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* ✅ LEFT ALIGNED */
+}
+
+.amount-cell {
+    font-weight: 600;
+}
+
+.description-cell {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    max-height: 3rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+}
+
+.balance-cell {
+    font-weight: 600;
+}
+
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.amount-positive { color: green; }
+.amount-negative { color: red; }
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+</style>
+<div class="dashboard-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="stat-card" style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border);">
+        <div style="font-size: 0.9rem; color: var(--text-muted);">Platform Balance</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary);">
+            ₱{{ "%.2f"|format(admin.wallet_balance) if admin else '0.00' }}
+        </div>
+    </div>
+    
+    <div class="stat-card" style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border);">
+        <div style="font-size: 0.9rem; color: var(--text-muted);">Pending Refunds</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--warning);">
+            ₱{{ "%.2f"|format(refunds|sum(attribute='amount')) }}
+        </div>
+    </div>
+    
+    <div class="stat-card" style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border);">
+        <div style="font-size: 0.9rem; color: var(--text-muted);">Total Escrow</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--success);">
+            ₱{{ "%.2f"|format(total_escrow) }}
+        </div>
+    </div>
+</div>
+<div class="dashboard-container">
+
+    <div class="tabs">
+        <!-- CHANGE THIS LINE -->
+        <button class="tab-btn active" onclick="showTab('refunds', event)">Refund Requests</button>
+        <button class="tab-btn" onclick="showTab('transactions', event)">All Transactions</button>
+        <button class="tab-btn" onclick="showTab('payments', event)">Errand Payments</button>
+    </div>
+
+    <div id="refunds-tab" class="tab-content active">
+        <div class="table-container">
+            <div class="table-header">
+                <div>ID</div><div>Date</div><div>User</div>
+                <div>Amount</div><div>Reason</div><div>Status</div><div>Actions</div>
+            </div>
+
+            {% for refund in refunds %}
+            <div class="table-row">
+                <div>#{{ refund.id }}</div>
+                <div>{{ refund.created_at.strftime('%m/%d %H:%M') }}</div>
+
+                <div class="user-cell">
+                    <div class="user-name">{{ refund.user.username }}</div>
+                    <div class="user-role">{{ refund.user.email }}</div>
+                </div>
+
+                <div class="amount-cell amount-negative">
+                    {% if "Amount: ₱" in refund.description %}
+                        {{ refund.description.split("Amount: ₱")[1].split(".")[0] }}.
+                        {{ refund.description.split("Amount: ₱")[1].split(".")[1].split(".")[0] }}
+                    {% else %}
+                        ₱{{ "%.2f"|format(refund.amount|abs) }}
+                    {% endif %}
+                </div>
+
+                <!-- SHOW REFUND REASON -->
+                <div class="description-cell" style="max-height: none;">
+                    {{ refund.description|default('No reason provided') }}
+                </div>
+
+                <div>
+                    <span class="badge">{{ refund.status }}</span>
+                </div>
+
+                <div class="action-buttons">
+                {% if refund.status == 'pending' %}
+                    <a href="{{ url_for('main.approve_refund', transaction_id=refund.id) }}" class="btn btn-success btn-sm">Approve</a>
+                    <form method="POST" action="{{ url_for('main.reject_refund', transaction_id=refund.id) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Reject this refund request?')">
+                            Reject
+                        </button>
+                        <input type="hidden" name="reason" value="Refund request rejected by admin">
+                    </form>
+                {% else %}
+                    <span>Processed</span>
+                {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- TRANSACTIONS TAB -->
+    <div id="transactions-tab" class="tab-content">
+        <div class="table-container">
+            <div class="table-header">
+                <div>ID</div><div>Date</div><div>User</div>
+                <div>Type</div><div>Amount</div><div>Description</div><div>Balance</div>
+            </div>
+
+            {% for transaction in all_transactions %}
+            <div class="table-row">
+                <div>#{{ transaction.id }}</div>
+                <div>{{ transaction.created_at.strftime('%m/%d %H:%M') }}</div>
+
+                <div class="user-cell">
+                    <div class="user-name">{{ transaction.user.username }}</div>
+                    <div class="user-role">{{ transaction.user.role }}</div>
+                </div>
+
+                <div class="type-cell">
+                    <span class="badge">{{ transaction.transaction_type }}</span>
+                </div>
+
+                <div class="amount-cell {% if transaction.amount > 0 %}amount-positive{% else %}amount-negative{% endif %}">
+                    {% if transaction.amount > 0 %}+{% endif %}₱{{ "%.2f"|format(transaction.amount) }}
+                </div>
+
+                <div class="description-cell">{{ transaction.description }}</div>
+
+                <div class="balance-cell">
+                    ₱{{ "%.2f"|format(transaction.balance_after) }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- PAYMENTS TAB -->
+    <div id="payments-tab" class="tab-content">
+        <div class="table-container">
+            <div class="table-header">
+                <div>ID</div><div>Date</div><div>Errand</div>
+                <div>Client → Runner</div><div>Amount</div><div>Status</div><div>Actions</div>
+            </div>
+
+            {% for payment in payments %}
+            <div class="table-row">
+                <div>#{{ payment.id }}</div>
+                <div>{{ payment.created_at.strftime('%m/%d %H:%M') }}</div>
+                <div>{{ payment.errand.category }}</div>
+                <div>{{ payment.client.username }} → {{ payment.runner.username if payment.runner else 'Unassigned' }}</div>
+
+                <div class="amount-cell">
+                    ₱{{ "%.2f"|format(payment.amount) }}
+                </div>
+
+                <div><span class="badge">{{ payment.payment_status }}</span></div>
+
+                <div class="action-buttons">
+                    <a href="{{ url_for('main.view_payment', payment_id=payment.id) }}" class="btn btn-secondary btn-sm">View</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+function showTab(tab, event) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+    document.getElementById(tab + '-tab').classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+</script>
+{% endblock %}

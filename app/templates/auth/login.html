@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+{% block header_title %}Login{% endblock %}
+
+{% block content %}
+<style>
+    .auth-container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 2rem 0;
+    }
+
+    .auth-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .auth-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .auth-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .auth-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .auth-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .auth-form {
+        padding: 2rem;
+    }
+
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 22px;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        transition: var(--transition);
+        z-index: 3;
+    }
+
+    .form-control {
+        height: 44px; /* or whatever your design uses */
+        line-height: 44px;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-family: inherit;
+        font-size: 0.9rem;
+        transition: var(--transition);
+        background: var(--surface);
+        color: var(--text-primary);
+    }
+
+    .form-control.with-icon {
+        padding-left: 2.5rem;
+        /* NO right padding changes */
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.1);
+    }
+
+    .form-control:focus + .input-icon {
+        color: var(--primary);
+    }
+
+    .form-control.error {
+        border-color: var(--error);
+        box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
+        /* NO padding changes - this is what causes the shift */
+    }
+
+    /* REMOVE the .error-icon class entirely */
+
+    .error-message {
+        color: var(--error);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .btn-login {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        border: none;
+        padding: 1rem;
+        font-weight: 600;
+        border-radius: var(--radius);
+        transition: var(--transition);
+        width: 100%;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(201, 181, 156, 0.3);
+    }
+
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    .btn-login:disabled {
+        background: var(--text-muted);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .auth-links {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .auth-links a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .auth-links a:hover {
+        text-decoration: underline;
+        color: var(--primary-dark);
+    }
+
+    .form-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        font-size: 0.875rem;
+    }
+
+    .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+    }
+
+    .remember-me input[type="checkbox"] {
+        margin: 0;
+    }
+
+    .forgot-password {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .forgot-password:hover {
+        text-decoration: underline;
+        color: var(--primary-dark);
+    }
+
+    @media (max-width: 480px) {
+        .auth-container {
+            padding: 1rem;
+        }
+        
+        .auth-form {
+            padding: 1.5rem;
+        }
+        
+        .form-footer {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Welcome Back</h2>
+        </div>
+        
+        <form method="post" class="auth-form" id="loginForm" novalidate>
+            <div class="input-group">
+                <i class="input-icon fas fa-user"></i>
+                <input type="text" name="username" id="username" class="form-control with-icon" placeholder="Username" required
+                    minlength="3" maxlength="50" pattern="[a-zA-Z0-9_]+"
+                    title="Username can only contain letters, numbers, and underscores">
+                <div class="error-message" id="usernameError"></div>
+            </div>
+            
+            <div class="input-group">
+                <i class="input-icon fas fa-lock"></i>
+                <input type="password" name="password" id="password" class="form-control with-icon" placeholder="Password" required
+                       minlength="6" maxlength="100">
+                <div class="error-message" id="passwordError"></div>
+            </div>
+            
+            <div class="form-footer">
+                <label class="remember-me">
+                    <input type="checkbox" name="remember" id="remember">
+                    <span>Remember me</span>
+                </label>
+                <a href="{{ url_for('main.forgot_password') }}" class="forgot-password">Forgot password?</a>
+            </div>
+            
+            <button type="submit" class="btn-login" id="submitBtn">Sign In</button>
+            
+            <div class="auth-links">
+                <p>Don't have an account? <a href="{{ url_for('main.register') }}">Create one here</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submitBtn');
+        const usernameError = document.getElementById('usernameError');
+        const passwordError = document.getElementById('passwordError');
+
+        // SIMPLIFIED validation functions - no error icons
+        function validateUsername() {
+            const username = usernameInput.value.trim();
+            usernameInput.classList.remove('error');
+            usernameError.textContent = '';
+
+            if (!username) {
+                usernameInput.classList.add('error');
+                usernameError.innerHTML = '<i class="fas fa-exclamation-circle"></i> Username is required';
+                return false;
+            }
+
+            if (username.length < 3) {
+                usernameInput.classList.add('error');
+                usernameError.innerHTML = '<i class="fas fa-exclamation-circle"></i> Username must be at least 3 characters long';
+                return false;
+            }
+
+            const usernameRegex = /^[a-zA-Z0-9_]+$/;
+            if (!usernameRegex.test(username)) {
+                usernameInput.classList.add('error');
+                usernameError.innerHTML = '<i class="fas fa-exclamation-circle"></i> Username can only contain letters, numbers, and underscores';
+                return false;
+            }
+
+            return true;
+        }
+
+        function validatePassword() {
+            const password = passwordInput.value;
+            passwordInput.classList.remove('error');
+            passwordError.textContent = '';
+
+            if (!password) {
+                passwordInput.classList.add('error');
+                passwordError.innerHTML = '<i class="fas fa-exclamation-circle"></i> Password is required';
+                return false;
+            }
+
+            return true;
+        }
+
+        function validateForm() {
+            const isUsernameValid = validateUsername();
+            const isPasswordValid = validatePassword();
+            return isUsernameValid && isPasswordValid;
+        }
+
+        // Event listeners for real-time validation
+        usernameInput.addEventListener('input', validateUsername);
+        usernameInput.addEventListener('blur', validateUsername);
+        passwordInput.addEventListener('input', validatePassword);
+        passwordInput.addEventListener('blur', validatePassword);
+
+        // Form submission
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (validateForm()) {
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
+                
+                // Submit the form
+                this.submit();
+            } else {
+                // Scroll to first error
+                const firstError = document.querySelector('.form-control.error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstError.focus();
+                }
+            }
+        });
+
+        // Clear errors when user starts typing
+        usernameInput.addEventListener('input', function() {
+            if (this.classList.contains('error')) {
+                validateUsername();
+            }
+        });
+
+        passwordInput.addEventListener('input', function() {
+            if (this.classList.contains('error')) {
+                validatePassword();
+            }
+        });
+    });
+</script>
+{% endblock %}

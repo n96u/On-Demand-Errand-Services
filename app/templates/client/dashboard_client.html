@@ -1,0 +1,701 @@
+{% extends 'base.html' %}
+
+{% block title %}Client Dashboard{% endblock %}
+{% block header_title %}Client Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        text-align: center;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--primary-light), var(--primary));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .stat-trend {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .trend-up {
+        color: var(--success);
+    }
+
+    .trend-down {
+        color: var(--error);
+    }
+
+    /* Quick Actions - New Design (Horizontal Cards) */
+    .quick-actions {
+        margin: 3rem 0;
+    }
+
+    .quick-actions h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .actions-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .action-card {
+        background: linear-gradient(135deg, var(--surface) 0%, var(--background) 100%);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        border: 2px solid var(--border);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        transition: left 0.5s;
+    }
+
+    .action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .action-card:hover::before {
+        left: 100%;
+    }
+
+    .action-icon-wrapper {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: transform 0.3s ease;
+    }
+
+    .action-card:hover .action-icon-wrapper {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .action-icon {
+        font-size: 1.8rem;
+        color: white;
+    }
+
+    .action-content {
+        flex: 1;
+    }
+
+    .action-title {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+        font-size: 1.2rem;
+    }
+
+    .action-description {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+        margin-bottom: 0;
+    }
+
+    .action-arrow {
+        color: var(--primary);
+        font-size: 1.2rem;
+        opacity: 0;
+        transform: translateX(-10px);
+        transition: all 0.3s ease;
+    }
+
+    .action-card:hover .action-arrow {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    /* Recent Activity - Improved Spacing */
+    .recent-activity {
+        margin: 3rem 0;
+    }
+
+    .recent-activity h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--primary-light);
+    }
+
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .activity-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 1.5rem;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+        gap: 1.5rem;
+    }
+
+    .activity-item:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .activity-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .activity-title {
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+        font-size: 1.1rem;
+        line-height: 1.3;
+    }
+
+    .activity-meta {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    .activity-meta strong {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-top: 0.25rem;
+    }
+
+    .badge-pending {
+        background: var(--text-muted);
+        color: white;
+    }
+
+    .badge-accepted {
+        background: var(--info);
+        color: white;
+    }
+
+    .badge-in-progress {
+        background: var(--warning);
+        color: white;
+    }
+
+    .badge-completed {
+        background: var(--success);
+        color: white;
+    }
+
+    .badge-canceled {
+        background: var(--error);
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-muted);
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+    }
+
+    .empty-state-title {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .empty-state-description {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .welcome-section {
+        background: linear-gradient(135deg, var(--primary-light), var(--primary));
+        color: white;
+        padding: 2.5rem;
+        border-radius: var(--radius-lg);
+        margin-bottom: 2.5rem;
+    }
+
+    .welcome-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    .welcome-description {
+        opacity: 0.9;
+        margin-bottom: 1.5rem;
+        font-size: 1.1rem;
+        line-height: 1.5;
+    }
+
+    /* Quick Tips Section */
+    .quick-tips {
+        background: var(--primary-light);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        margin-top: 3rem;
+        border: 1px solid var(--primary);
+    }
+
+    .quick-tips h3 {
+        margin-bottom: 1.5rem;
+        color: var(--primary-dark);
+        font-size: 1.3rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .tips-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .tip-item {
+        background: rgba(255, 255, 255, 0.8);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        border-left: 4px solid var(--primary);
+    }
+
+    .tip-item strong {
+        color: var(--primary-dark);
+        font-size: 1rem;
+        display: block;
+        margin-bottom: 0.75rem;
+    }
+
+    .tip-item p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .stat-card {
+            padding: 1.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+        }
+        
+        .actions-container {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .action-card {
+            padding: 1.5rem;
+            gap: 1rem;
+        }
+        
+        .action-icon-wrapper {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .action-icon {
+            font-size: 1.5rem;
+        }
+        
+        .activity-item {
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1.25rem;
+        }
+        
+        .badge {
+            align-self: flex-start;
+        }
+        
+        .welcome-section {
+            padding: 2rem 1.5rem;
+            text-align: center;
+        }
+        
+        .tips-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .action-arrow {
+            display: none;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .activity-meta {
+            font-size: 0.8rem;
+        }
+        
+        .action-title {
+            font-size: 1.1rem;
+        }
+        
+        .action-description {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+
+<!-- Welcome Section -->
+<div class="welcome-section">
+    <div class="welcome-title">Welcome back, {{ user.first_name or user.username }}! 👋</div>
+    <div class="welcome-description">
+        {% if active_errands %}
+            You have {{ active_errands|length }} active errand{{ 's' if active_errands|length > 1 else '' }} in progress.
+        {% else %}
+            Ready to get things done? Create your first errand!
+        {% endif %}
+    </div>
+    <a href="{{ url_for('main.create_errand') }}" class="btn btn-primary">
+        <i class="fas fa-plus-circle"></i> Create New Errand
+    </a>
+</div>
+
+<!-- Verification Alert -->
+{% if not user.verified %}
+<div class="alert alert-warning" style="display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; margin-bottom: 2rem;">
+    <i class="fas fa-exclamation-triangle" style="font-size: 1.5rem;"></i>
+    <div style="flex: 1;">
+        <strong>Account Verification Required</strong>
+        <div style="font-size: 0.9rem; margin-top: 0.25rem;">
+            {% if user.verification_status == 'pending' %}
+            Your verification request is under review. You'll be able to post errands once approved.
+            {% elif user.verification_status == 'rejected' %}
+            Your verification was rejected. Please submit a new request or contact support.
+            {% else %}
+            Verify your account to start posting errands and access all features.
+            {% endif %}
+        </div>
+    </div>
+    {% if user.verification_status != 'pending' %}
+    <a href="{{ url_for('main.verification') }}" class="btn btn-warning btn-sm">
+        <i class="fas fa-shield-alt mr-1"></i>
+        {% if user.verification_status == 'rejected' %}Re-submit{% else %}Verify Now{% endif %}
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-tasks"></i>
+        </div>
+        <div class="stat-value">{{ active_errands|length }}</div>
+        <div class="stat-label">Active Errands</div>
+        <div class="stat-trend trend-up">
+            <i class="fas fa-arrow-up"></i>
+            <span>Current</span>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-value">{{ completed_errands|length }}</div>
+        <div class="stat-label">Completed</div>
+        <div class="stat-trend trend-up">
+            <i class="fas fa-history"></i>
+            <span>All Time</span>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-chart-pie"></i>
+        </div>
+        <div class="stat-value">
+            {% set total_errands = active_errands|length + completed_errands|length %}
+            {% if total_errands > 0 %}
+                {{ ((active_errands|length / total_errands) * 100)|round|default(0) }}%
+            {% else %}
+                0%
+            {% endif %}
+        </div>
+        <div class="stat-label">Active Rate</div>
+        <div class="stat-trend trend-up">
+            <i class="fas fa-chart-line"></i>
+            <span>Efficiency</span>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <div class="stat-value">
+            ₱{{ "%.2f"|format(completed_errands|sum(attribute='proposed_fee') or 0) }}
+        </div>
+        <div class="stat-label">Total Spent</div>
+        <div class="stat-trend trend-up">
+            <i class="fas fa-wallet"></i>
+            <span>All Time</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-wallet"></i>
+        </div>
+        <div class="stat-value">₱{{ "%.2f"|format(user.wallet_balance) }}</div>
+        <div class="stat-label">Wallet Balance</div>
+        <div class="stat-trend">
+            <a href="{{ url_for('main.wallet') }}" style="color: inherit; text-decoration: none;">
+                <i class="fas fa-arrow-right"></i>
+                <span>Manage</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions - New Design -->
+<div class="quick-actions">
+    <h2>Quick Actions</h2>
+    <div class="actions-container">
+        <a href="{{ url_for('main.create_errand') }}" class="action-card">
+            <div class="action-icon-wrapper">
+                <i class="fas fa-plus-circle action-icon"></i>
+            </div>
+            <div class="action-content">
+                <div class="action-title">Create Errand</div>
+                <div class="action-description">Request a new service from our verified runners</div>
+            </div>
+            <div class="action-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </a>
+        
+        <a href="{{ url_for('main.active_errands') }}" class="action-card">
+            <div class="action-icon-wrapper">
+                <i class="fas fa-tasks action-icon"></i>
+            </div>
+            <div class="action-content">
+                <div class="action-title">Active Errands</div>
+                <div class="action-description">Monitor and manage your ongoing requests</div>
+            </div>
+            <div class="action-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </a>
+        
+        <a href="{{ url_for('main.errand_history') }}" class="action-card">
+            <div class="action-icon-wrapper">
+                <i class="fas fa-history action-icon"></i>
+            </div>
+            <div class="action-content">
+                <div class="action-title">Errand History</div>
+                <div class="action-description">Review your completed services and receipts</div>
+            </div>
+            <div class="action-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </a>
+        
+        <a href="{{ url_for('main.profile') }}" class="action-card">
+            <div class="action-icon-wrapper">
+                <i class="fas fa-user-cog action-icon"></i>
+            </div>
+            <div class="action-content">
+                <div class="action-title">Account Settings</div>
+                <div class="action-description">Update your profile and preferences</div>
+            </div>
+            <div class="action-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="recent-activity">
+    <h2>Recent Activity</h2>
+    
+    {% if active_errands or completed_errands %}
+    <div class="activity-list">
+        {% for errand in (active_errands + completed_errands[:5])|sort(attribute='created_at', reverse=true) %}
+        <div class="activity-item">
+            <div class="activity-content">
+                <div class="activity-title">#{{ errand.id }} - {{ errand.category }}</div>
+                <div class="activity-meta">
+                    <strong>Status:</strong> {{ errand.status }} • 
+                    <strong>Fee:</strong> ₱{{ "%.2f"|format(errand.proposed_fee) }} • 
+                    <strong>Created:</strong> {{ errand.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    {% if errand.runner %}
+                    • <strong>Runner:</strong> {{ errand.runner.username }}
+                    {% endif %}
+                </div>
+            </div>
+            <span class="badge badge-{{ errand.status|lower|replace(' ', '-') }}">
+                {{ errand.status }}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="fas fa-tasks"></i>
+        </div>
+        <h3 class="empty-state-title">No Errands Yet</h3>
+        <p class="empty-state-description">
+            You haven't created any errands yet. Get started by creating your first errand!
+        </p>
+        <a href="{{ url_for('main.create_errand') }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> Create Your First Errand
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Tips -->
+<div class="quick-tips">
+    <h3>
+        <i class="fas fa-lightbulb"></i> Quick Tips
+    </h3>
+    <div class="tips-grid">
+        <div class="tip-item">
+            <strong>Be Specific</strong>
+            <p>Provide clear descriptions and addresses for faster service completion.</p>
+        </div>
+        <div class="tip-item">
+            <strong>Fixed Pricing</strong>
+            <p>We use standardized pricing based on service categories for fairness.</p>
+        </div>
+        <div class="tip-item">
+            <strong>Track Progress</strong>
+            <p>Monitor your active errands and maintain communication with runners.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

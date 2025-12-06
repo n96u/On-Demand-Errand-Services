@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+
+{% block title %}Account Verification - GrabItDone{% endblock %}
+{% block header_title %}Account Verification{% endblock %}
+
+{% block content %}
+<style>
+    .auth-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .auth-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .auth-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .auth-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .auth-form {
+        padding: 2rem;
+    }
+
+    .verification-steps {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+    .verification-steps::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--border);
+        z-index: 1;
+    }
+
+    .step {
+        text-align: center;
+        position: relative;
+        z-index: 2;
+        flex: 1;
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--border);
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.5rem;
+        font-weight: 600;
+    }
+
+    .step.active .step-number {
+        background: var(--primary);
+        color: white;
+    }
+
+    .step.completed .step-number {
+        background: var(--success);
+        color: white;
+    }
+
+    .step-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .step.active .step-label {
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-family: inherit;
+        font-size: 0.9rem;
+        background: var(--surface);
+        color: var(--text-primary);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.1);
+    }
+
+    .file-upload {
+        border: 2px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 2rem;
+        text-align: center;
+        transition: var(--transition);
+        cursor: pointer;
+    }
+
+    .file-upload:hover {
+        border-color: var(--primary);
+    }
+
+    .file-upload-icon {
+        font-size: 2rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+
+    .file-upload input[type="file"] {
+        display: none;
+    }
+
+    .file-info {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .id-requirements {
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .id-requirements h4 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: var(--primary);
+    }
+
+    .requirements-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .requirements-list li {
+        padding: 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .requirements-list li::before {
+        content: '✓';
+        color: var(--success);
+        font-weight: 600;
+    }
+
+    .verification-status {
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .status-pending {
+        background: var(--warning-light);
+        border: 1px solid var(--warning);
+        color: var(--warning-dark);
+    }
+
+    .status-approved {
+        background: var(--success-light);
+        border: 1px solid var(--success);
+        color: var(--success-dark);
+    }
+
+    .status-rejected {
+        background: var(--error-light);
+        border: 1px solid var(--error);
+        color: var(--error-dark);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .btn-block {
+        width: 100%;
+    }
+
+    @media (max-width: 768px) {
+        .verification-steps {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .verification-steps::before {
+            display: none;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-align: left;
+        }
+        
+        .step-number {
+            margin: 0;
+            flex-shrink: 0;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Account Verification</h2>
+            <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">
+                Verify your account to start posting errands
+            </p>
+        </div>
+        
+        <div class="auth-form">
+            {% if user.verification_status == 'pending' %}
+            <div class="verification-status status-pending">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h4>Verification Under Review</h4>
+                <p>Your verification request is being reviewed. You'll be notified once it's processed.</p>
+                <small>Status: {{ user.verification_status|title }}</small>
+            </div>
+            {% elif user.verified %}
+            <div class="verification-status status-approved">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <h4>Account Verified!</h4>
+                <p>Your account has been verified. You can now post errands.</p>
+                <small>Status: Verified</small>
+            </div>
+            {% elif user.verification_status == 'rejected' %}
+            <div class="verification-status status-rejected">
+                <i class="fas fa-times-circle fa-2x mb-2"></i>
+                <h4>Verification Rejected</h4>
+                <p>Your verification request was rejected. Please review the requirements and submit again.</p>
+                <small>Status: {{ user.verification_status|title }}</small>
+            </div>
+            {% else %}
+            <!-- Verification Steps -->
+            <div class="verification-steps">
+                <div class="step active">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Submit Request</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Under Review</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Verified</div>
+                </div>
+            </div>
+
+            <!-- ID Requirements -->
+            <div class="id-requirements">
+                <h4><i class="fas fa-info-circle"></i> Verification Requirements</h4>
+                <ul class="requirements-list">
+                    <li>Valid government-issued ID required</li>
+                    <li>Account must be in good standing</li>
+                    <li>Complete profile information</li>
+                    <li>Verification typically takes 24-48 hours</li>
+                </ul>
+            </div>
+
+            <form method="post">
+                <div class="form-group">
+                    <label class="form-label">Verification Type</label>
+                    <select name="verification_type" class="form-control" required>
+                        <option value="">Choose verification type...</option>
+                        <option value="standard">Standard Verification</option>
+                        <option value="enhanced">Enhanced Verification</option>
+                    </select>
+                    <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        Standard verification allows basic errand posting. Enhanced verification may be required for certain services.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Additional Information</label>
+                    <textarea name="additional_info" class="form-control" rows="4" placeholder="Provide any additional information that might help with verification..."></textarea>
+                    <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        Optional: Include details about how you plan to use the platform.
+                    </div>
+                </div>
+
+                <div style="background: var(--primary-light); padding: 1rem; border-radius: var(--radius); margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                        <i class="fas fa-shield-alt" style="color: var(--primary); margin-top: 0.1rem;"></i>
+                        <div>
+                            <strong>Privacy Notice:</strong> Your information is securely stored and will only be used for verification purposes. We do not share your personal information with third parties.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-paper-plane"></i> Submit Verification Request
+                    </button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary btn-block">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

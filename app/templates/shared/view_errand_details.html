@@ -1,0 +1,721 @@
+{% extends 'base.html' %}
+
+{% block title %}Errand #{{ errand.id }} Details{% endblock %}
+{% block header_title %}Errand Details{% endblock %}
+
+{% block content %}
+<style>
+    .errand-container {
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+    }
+
+    /* ACTIONS AT THE VERY TOP */
+    .actions-top {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .action-buttons-top {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    /* Enhanced Errand Header */
+    .errand-header {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, var(--primary-light) 0%, rgba(233, 222, 209, 0.15) 100%);
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .errand-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--primary), var(--accent));
+        border-radius: 3px 0 0 3px;
+    }
+
+    .header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .errand-title-section {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .errand-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0 0 0.25rem 0;
+        line-height: 1.2;
+    }
+
+    .errand-id {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        background: rgba(255, 255, 255, 0.8);
+        padding: 0.3rem 0.8rem;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        display: inline-block;
+        font-weight: 600;
+    }
+
+    .errand-description {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 6px;
+        border-left: 3px solid var(--primary);
+    }
+
+    /* Status Badge - Enhanced */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .status-pending { 
+        background: var(--text-muted); 
+        color: white; 
+    }
+    .status-accepted { 
+        background: var(--info); 
+        color: white; 
+    }
+    .status-in-progress { 
+        background: var(--warning); 
+        color: var(--text-primary); 
+    }
+    .status-completed { 
+        background: var(--success); 
+        color: white; 
+    }
+    .status-canceled { 
+        background: var(--error); 
+        color: white; 
+    }
+
+    /* Grid Layout */
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Grid Items - Enhanced */
+    .grid-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .grid-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .grid-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--primary-light);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Info Rows */
+    .info-row {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        align-items: start;
+        padding: 0.5rem 0;
+    }
+
+    .info-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .info-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-align: right;
+        padding-right: 0.5rem;
+    }
+
+    .info-value {
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        font-weight: 500;
+        line-height: 1.5;
+    }
+
+    /* Grid Column Spans */
+    .grid-location {
+        grid-column: span 8;
+    }
+
+    .grid-payment {
+        grid-column: span 4;
+    }
+
+    .grid-people {
+        grid-column: span 6;
+    }
+
+    .grid-timeline {
+        grid-column: span 6;
+    }
+
+    /* Status Message */
+    .grid-status-message {
+        grid-column: 1 / -1;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .status-message-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.95rem;
+    }
+
+    .message-success {
+        color: var(--success);
+        border-left: 4px solid var(--success);
+        padding-left: 1rem;
+    }
+
+    .message-error {
+        color: var(--error);
+        border-left: 4px solid var(--error);
+        padding-left: 1rem;
+    }
+
+    /* Timeline List - Enhanced */
+    .timeline-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        position: relative;
+    }
+
+    .timeline-list::before {
+        content: '';
+        position: absolute;
+        left: 60px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--primary-light);
+    }
+
+    .timeline-item {
+        display: flex;
+        margin-bottom: 1.25rem;
+        position: relative;
+        padding-left: 80px;
+    }
+
+    .timeline-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 52px;
+        top: 0.35rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--primary);
+        border: 3px solid white;
+        box-shadow: 0 0 0 2px var(--primary);
+        z-index: 1;
+    }
+
+    .timeline-date {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        width: 70px;
+        text-align: right;
+        padding-right: 1rem;
+        margin-top: 1%;
+    }
+
+    .timeline-event {
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        font-weight: 500;
+        flex: 1;
+        padding-left: 10%;
+        margin-top: 1%;
+    }
+
+    /* Contact Info */
+    .contact-info {
+        background: var(--background);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--primary);
+    }
+
+    /* Payment Status Styling */
+    .payment-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.3rem 0.8rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .payment-paid {
+        background: rgba(72, 187, 120, 0.1);
+        color: var(--success);
+        border: 1px solid var(--success);
+    }
+    
+    .payment-pending {
+        background: rgba(160, 174, 192, 0.1);
+        color: var(--text-muted);
+        border: 1px solid var(--text-muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .grid-location {
+            grid-column: span 12;
+        }
+        
+        .grid-payment {
+            grid-column: span 6;
+        }
+        
+        .grid-people {
+            grid-column: span 6;
+        }
+        
+        .grid-timeline {
+            grid-column: span 12;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .errand-container {
+            padding: 0 1rem;
+        }
+
+        .details-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .grid-location,
+        .grid-payment,
+        .grid-people,
+        .grid-timeline {
+            grid-column: 1;
+        }
+        
+        .errand-header {
+            padding: 1.25rem;
+        }
+        
+        .errand-title {
+            font-size: 1.4rem;
+        }
+        
+        .info-row {
+            grid-template-columns: 100px 1fr;
+        }
+        
+        .timeline-list::before {
+            left: 50px;
+        }
+        
+        .timeline-item {
+            padding-left: 70px;
+        }
+        
+        .timeline-item::before {
+            left: 44px;
+        }
+        
+        .timeline-date {
+            width: 60px;
+            font-size: 0.8rem;
+        }
+        
+        .action-buttons-top {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .action-buttons-top .btn {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .errand-container {
+            padding: 0 0.75rem;
+        }
+        
+        .info-row {
+            grid-template-columns: 1fr;
+            gap: 0.25rem;
+            padding: 0.75rem 0;
+        }
+        
+        .info-label {
+            text-align: left;
+            padding-right: 0;
+        }
+        
+        .timeline-list::before {
+            left: 15px;
+        }
+        
+        .timeline-item {
+            padding-left: 35px;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .timeline-item::before {
+            left: 9px;
+        }
+        
+        .timeline-date {
+            width: 100%;
+            text-align: left;
+            padding-right: 0;
+        }
+        
+        .errand-description {
+            padding: 0.5rem;
+            font-size: 0.95rem;
+        }
+    }
+</style>
+
+<div class="errand-container">
+    <!-- ACTIONS AT THE VERY TOP -->
+    <div class="action-buttons-top">
+        {% if request.referrer and 'request-refund' not in request.referrer and 'view-errand' not in request.referrer %}
+            <a href="{{ request.referrer }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        {% else %}
+            <!-- Fallback navigation based on user role -->
+            {% if user_role == 'client' %}
+                <a href="{{ url_for('main.errand_history') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to History
+                </a>
+            {% elif user_role == 'runner' %}
+                <a href="{{ url_for('main.runner_errand_history') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to History
+                </a>
+            {% elif user_role == 'admin' %}
+                <a href="{{ url_for('main.admin_errands') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Errands
+                </a>
+            {% else %}
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            {% endif %}
+        {% endif %}
+        
+        {% if user_role == 'client' and errand.client_id == session.user_id and errand.status in ['Completed', 'Canceled'] %}
+            {% if not refund_status or refund_status == 'refund_rejected' %}
+                <a href="{{ url_for('main.request_refund', errand_id=errand.id) }}" 
+                class="btn btn-warning">
+                    <i class="fas fa-money-bill-wave"></i> 
+                    {% if refund_status == 'refund_rejected' %}
+                        Re-request Refund
+                    {% else %}
+                        Request Refund
+                    {% endif %}
+                </a>
+            {% elif refund_status == 'refund_pending' %}
+                <button class="btn btn-warning" disabled>
+                    <i class="fas fa-clock"></i> Refund Pending
+                </button>
+            {% elif refund_status == 'refunded' %}
+                <button class="btn btn-info" disabled>
+                    <i class="fas fa-check-circle"></i> Refunded
+                </button>
+            {% endif %}
+        {% endif %}
+        
+        {% if errand.status == 'Completed' or errand.status == 'Canceled' %}
+            <a href="{{ url_for('main.view_receipt', errand_id=errand.id) }}" class="btn btn-success">
+                <i class="fas fa-receipt"></i> View Receipt
+            </a>
+        {% elif errand.status in ['Pending', 'Accepted', 'In Progress'] %}
+            {% if user_role == 'client' and errand.client_id == session.user_id %}
+                <a href="{{ url_for('main.update_errand_status', errand_id=errand.id, status='Canceled') }}" 
+                class="btn btn-error"
+                onclick="return confirm('Are you sure you want to cancel this errand? This action cannot be undone.')">
+                    <i class="fas fa-times"></i> Cancel Errand
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- Enhanced Errand Header -->
+    <div class="errand-header">
+        <div class="header-top">
+            <div class="errand-title-section">
+                <h1 class="errand-title">{{ errand.category }}</h1>
+                <span class="errand-id">#{{ errand.id }}</span>
+            </div>
+            <div class="status-badge status-{{ get_errand_display_status(errand)|lower|replace(' ', '-') }}">
+                <i class="fas 
+                    {% if get_errand_display_status(errand) == 'Refunded' %}fa-money-check-alt
+                    {% elif get_errand_display_status(errand) == 'Refund Pending' %}fa-clock
+                    {% elif get_errand_display_status(errand) == 'Refund Rejected' %}fa-times-circle
+                    {% elif get_errand_display_status(errand) == 'Completed' %}fa-check-circle
+                    {% elif get_errand_display_status(errand) == 'Canceled' %}fa-times-circle
+                    {% elif get_errand_display_status(errand) == 'In Progress' %}fa-sync-alt
+                    {% elif get_errand_display_status(errand) == 'Accepted' %}fa-user-check
+                    {% else %}fa-clock{% endif %}">
+                </i>
+                {{ get_errand_display_status(errand) }}
+            </div>
+        </div>
+        <div class="errand-description">{{ errand.description }}</div>
+    </div>
+
+    <!-- Status Message -->
+    {% if errand.status == 'Completed' %}
+    <div class="grid-status-message message-success">
+        <div class="status-message-content">
+            <i class="fas fa-check-circle"></i>
+            <div>
+                <strong>Errand Completed Successfully</strong>
+                <div style="font-size: 0.85rem; margin-top: 0.25rem;">
+                    Completed on {{ errand.completed_at.strftime('%B %d, %Y at %I:%M %p') }}
+                    {% if errand.runner_user %} • Runner: {{ errand.runner_user.username }}{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if errand.status == 'Canceled' %}
+    <div class="grid-status-message message-error">
+        <div class="status-message-content">
+            <i class="fas fa-times-circle"></i>
+            <div>
+                <strong>Errand Canceled</strong>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Grid Layout -->
+    <div class="details-grid">
+        <!-- Location Information -->
+        <div class="grid-item grid-location">
+            <div class="grid-title">
+                <i class="fas fa-map-marker-alt"></i>
+                Location Information
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">Pickup:</div>
+                <div class="info-value">{{ errand.pickup_address }}</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">Drop-off:</div>
+                <div class="info-value">{{ errand.dropoff_address }}</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">Barangay:</div>
+                <div class="info-value">{{ errand.barangay }}</div>
+            </div>
+        </div>
+
+        <!-- Payment Information -->
+        <div class="grid-item grid-payment">
+            <div class="grid-title">
+                <i class="fas fa-money-bill-wave"></i>
+                Payment Details
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">Proposed:</div>
+                <div class="info-value">₱{{ "%.2f"|format(errand.proposed_fee) }}</div>
+            </div>
+            
+            {% if errand.final_fee %}
+            <div class="info-row">
+                <div class="info-label">Final:</div>
+                <div class="info-value">₱{{ "%.2f"|format(errand.final_fee) }}</div>
+            </div>
+            {% endif %}
+            
+            <div class="info-row">
+                <div class="info-label">Status:</div>
+                <div class="info-value">
+                    <span class="payment-status {% if errand.status == 'Completed' %}payment-paid{% else %}payment-pending{% endif %}">
+                        <i class="fas {% if errand.status == 'Completed' %}fa-check-circle{% else %}fa-clock{% endif %}"></i>
+                        {% if errand.status == 'Completed' %}PAID{% else %}PENDING{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- People Information -->
+        <div class="grid-item grid-people">
+            <div class="grid-title">
+                <i class="fas fa-users"></i>
+                People Involved
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">Client:</div>
+                <div class="info-value">
+                    {% if client %}
+                        {{ client.username }}
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">Runner:</div>
+                <div class="info-value">
+                    {% if errand.runner_user %}
+                        {{ errand.runner_user.username }}
+                        {% if errand.runner_user.first_name or errand.runner_user.last_name %}
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.1rem;">
+                                {{ errand.runner_user.first_name or '' }} {{ errand.runner_user.last_name or '' }}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <span style="color: var(--text-muted); font-style: italic;">Awaiting assignment</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if errand.runner_user and errand.runner_user.phone %}
+            <div class="contact-info">
+                <div class="info-row" style="margin: 0; padding: 0;">
+                    <div class="info-label">Contact:</div>
+                    <div class="info-value">
+                        {{ errand.runner_user.phone }}
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.1rem;">
+                            Runner contact information
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Timeline -->
+        <div class="grid-item grid-timeline">
+            <div class="grid-title">
+                <i class="fas fa-history"></i>
+                Timeline
+            </div>
+            
+            <ul class="timeline-list">
+                <li class="timeline-item">
+                    <div class="timeline-date">CREATED</div>
+                    <div class="timeline-event">{{ errand.created_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+                </li>
+                
+                {% if errand.preferred_time %}
+                <li class="timeline-item">
+                    <div class="timeline-date">PREFERRED</div>
+                    <div class="timeline-event">{{ errand.preferred_time.strftime('%b %d, %Y %I:%M %p') }}</div>
+                </li>
+                {% endif %}
+                
+                {% if errand.accepted_at %}
+                <li class="timeline-item">
+                    <div class="timeline-date">ACCEPTED</div>
+                    <div class="timeline-event">{{ errand.accepted_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+                </li>
+                {% endif %}
+                
+                {% if errand.completed_at %}
+                <li class="timeline-item">
+                    <div class="timeline-date">COMPLETED</div>
+                    <div class="timeline-event">{{ errand.completed_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+                </li>
+                {% endif %}
+                
+                {% if errand.updated_at and errand.updated_at != errand.created_at %}
+                <li class="timeline-item">
+                    <div class="timeline-date">UPDATED</div>
+                    <div class="timeline-event">{{ errand.updated_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

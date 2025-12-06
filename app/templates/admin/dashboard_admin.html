@@ -1,0 +1,400 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+{% block header_title %}System Overview{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        text-align: center;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--primary-light), var(--primary));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .system-stats {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin: 3rem 0;
+    }
+
+    .user-stats, .errand-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .stat-card-system {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        text-align: center;
+        border: 1px solid var(--border);
+        transition: var(--transition);
+    }
+
+    .stat-card-system:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-value-system {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label-system {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .activity-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        transition: var(--transition);
+    }
+
+    .activity-item:hover {
+        box-shadow: var(--shadow-sm);
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: var(--text-primary);
+    }
+
+    .activity-meta {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .badge-success {
+        background: var(--success);
+        color: white;
+    }
+
+    .badge-warning {
+        background: var(--warning);
+        color: white;
+    }
+
+    .badge-error {
+        background: var(--error);
+        color: white;
+    }
+
+    .badge-info {
+        background: var(--info);
+        color: white;
+    }
+
+    .badge-pending {
+        background: var(--text-muted);
+        color: white;
+    }
+
+    .badge-accepted {
+        background: var(--info);
+        color: white;
+    }
+
+    .badge-in-progress {
+        background: var(--warning);
+        color: white;
+    }
+
+    .badge-completed {
+        background: var(--success);
+        color: white;
+    }
+
+    .badge-canceled {
+        background: var(--error);
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state-title {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary);
+    }
+
+    .empty-state-description {
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 1024px) {
+        .system-stats {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .user-stats, .errand-stats {
+            grid-template-columns: 1fr;
+        }
+        
+        .system-stats {
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .stat-card {
+            padding: 1.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+        }
+    }
+</style>
+
+<div class="page-header">
+    <h1 style="margin: 0; font-size: 1.8rem;">System Overview</h1>
+    <span class="badge badge-info">Administrator</span>
+</div>
+
+<!-- Main Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-value">{{ total_users }}</div>
+        <div class="stat-label">Total Users</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-tasks"></i>
+        </div>
+        <div class="stat-value">{{ total_errands }}</div>
+        <div class="stat-label">Total Errands</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-sync-alt"></i>
+        </div>
+        <div class="stat-value">{{ active_errands }}</div>
+        <div class="stat-label">Active Errands</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-calendar-day"></i>
+        </div>
+        <div class="stat-value">{{ today_errands }}</div>
+        <div class="stat-label">Today's Errands</div>
+    </div>
+</div>
+
+<!-- System Stats -->
+<div class="system-stats">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">User Statistics</h2>
+        </div>
+        <div class="card-body">
+            <div class="user-stats">
+                <div class="stat-card-system">
+                    <div class="stat-value-system">{{ users|selectattr('role', 'equalto', 'client')|list|length }}</div>
+                    <div class="stat-label-system">Clients</div>
+                </div>
+                <div class="stat-card-system">
+                    <div class="stat-value-system">{{ users|selectattr('role', 'equalto', 'runner')|list|length }}</div>
+                    <div class="stat-label-system">Runners</div>
+                </div>
+                <div class="stat-card-system">
+                    <div class="stat-value-system">{{ users|selectattr('verified', 'equalto', true)|list|length }}</div>
+                    <div class="stat-label-system">Verified Users</div>
+                </div>
+                <div class="stat-card-system">
+                    <div class="stat-value-system">{{ users|selectattr('verified', 'equalto', false)|list|length }}</div>
+                    <div class="stat-label-system">Pending Verification</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Errand Statistics</h2>
+        </div>
+        <div class="card-body">
+            <div class="errand-stats">
+                <div class="stat-card-system">
+                    <div class="stat-value-system">{{ errands|selectattr('status', 'equalto', 'Completed')|list|length }}</div>
+                    <div class="stat-label-system">Completed</div>
+                </div>
+                <div class="stat-card-system">
+                    <div class="stat-value-system">₱{{ "%.2f"|format(errands|selectattr('status', 'equalto', 'Completed')|sum(attribute='proposed_fee') or 0) }}</div>
+                    <div class="stat-label-system">Total Volume</div>
+                </div>
+                <div class="stat-card-system">
+                    <div class="stat-value-system">{{ errands|selectattr('status', 'equalto', 'Pending')|list|length }}</div>
+                    <div class="stat-label-system">Pending</div>
+                </div>
+                <div class="stat-card-system">
+                    <div class="stat-value-system">{{ errands|selectattr('status', 'equalto', 'In Progress')|list|length }}</div>
+                    <div class="stat-label-system">In Progress</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Recent Activity</h2>
+    </div>
+    <div class="card-body">
+        {% if errands %}
+        <div class="activity-list">
+            {% for errand in errands[:5] %}
+            <div class="activity-item">
+                <div class="activity-content">
+                    <div class="activity-title">#{{ errand.id }} - {{ errand.category }}</div>
+                    <div class="activity-meta">
+                        <strong>Client:</strong> {{ errand.user_client.username }} | 
+                        <strong>Runner:</strong> {{ errand.user_runner.username if errand.user_runner else 'Not assigned' }} |
+                        <strong>Time:</strong> {{ errand.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                </div>
+                <span class="badge badge-{{ errand.status|lower|replace(' ', '-') }}">{{ errand.status }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3 class="empty-state-title">No Activity Yet</h3>
+            <p class="empty-state-description">System activity will appear here as users create errands.</p>
+        </div>
+        {% endif %}
+    </div>
+    <div class="card-footer">
+        <a href="{{ url_for('main.admin_reports') }}" class="btn btn-sm btn-primary">
+            <i class="fas fa-chart-bar mr-2"></i>
+            View All Reports
+        </a>
+    </div>
+</div>
+{% endblock %}

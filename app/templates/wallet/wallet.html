@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+
+{% block title %}My Wallet{% endblock %}
+{% block header_title %}My Wallet{% endblock %}
+
+{% block content %}
+<style>
+    .wallet-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+    }
+
+    .wallet-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .wallet-balance {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin: 0.5rem 0;
+        line-height: 1;
+    }
+
+    .wallet-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+
+    .transaction-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .transaction-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+    }
+
+    .transaction-list {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .transaction-item {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .transaction-item:last-child {
+        border-bottom: none;
+    }
+
+    .transaction-type {
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    .transaction-amount {
+        font-weight: 700;
+    }
+
+    .amount-positive {
+        color: var(--success);
+    }
+
+    .amount-negative {
+        color: var(--error);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        overflow-y: auto;
+    }
+
+    .modal-content {
+        background: var(--surface);
+        margin: 10% auto;
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        max-width: 500px;
+        position: relative;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--text-muted);
+        cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+        .transaction-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .wallet-actions {
+            flex-direction: column;
+        }
+        
+        .wallet-balance {
+            font-size: 2.5rem;
+        }
+        
+        .modal-content {
+            margin: 5% auto;
+            padding: 1.5rem;
+            width: 90%;
+        }
+    }
+</style>
+
+<div class="wallet-container">
+    <!-- Wallet Header -->
+    <div class="wallet-header">
+        <h2 style="margin: 0; font-size: 1.5rem;">Current Balance</h2>
+        <div class="wallet-balance">₱{{ "%.2f"|format(user.wallet_balance) }}</div>
+        <p style="opacity: 0.9; margin: 0.5rem 0;">Available for payments and withdrawals</p>
+        
+        <div class="wallet-actions">
+            {% if user.role != 'runner' %}
+            <button class="btn btn-primary" onclick="openModal('depositModal')">
+                <i class="fas fa-plus-circle"></i> Deposit
+            </button>
+            {% endif %}
+            <button class="btn btn-secondary" onclick="openModal('withdrawModal')">
+                <i class="fas fa-money-bill-wave"></i> Withdraw
+            </button>
+        </div>
+    </div>
+
+    <!-- Transaction Grid -->
+    <div class="transaction-grid">
+        <!-- Recent Transactions -->
+        <div class="transaction-card">
+            <h3 style="margin-top: 0;">Recent Transactions</h3>
+            <div class="transaction-list">
+                {% if transactions %}
+                    {% for transaction in transactions %}
+                    <div class="transaction-item">
+                        <div>
+                            <div class="transaction-type">{{ transaction.transaction_type }}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                {{ transaction.description or transaction.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </div>
+                        </div>
+                        <div class="transaction-amount {% if transaction.amount > 0 %}amount-positive{% else %}amount-negative{% endif %}">
+                            {% if transaction.amount > 0 %}+{% endif %}₱{{ "%.2f"|format(transaction.amount) }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <i class="fas fa-exchange-alt" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <p>No transactions yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div>
+            <div class="transaction-card">
+                <h3 style="margin-top: 0;">Statistics</h3>
+                <div style="display: grid; gap: 1rem;">
+                    <div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Total Deposits</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">
+                            ₱{{ "%.2f"|format(transactions|selectattr('transaction_type', 'equalto', 'deposit')|map(attribute='amount')|sum|default(0)) }}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Total Withdrawals</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--error);">
+                            ₱{{ "%.2f"|format(transactions|selectattr('transaction_type', 'equalto', 'withdrawal')|map(attribute='amount')|sum|default(0)|abs) }}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Total Payments</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">
+                            ₱{{ "%.2f"|format(transactions|selectattr('transaction_type', 'equalto', 'payment')|map(attribute='amount')|sum|default(0)|abs) }}
+                        </div>
+                    </div>
+                    {% if user.role == 'runner' %}
+                    <div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Total Earnings</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">
+                            ₱{{ "%.2f"|format(transactions|selectattr('transaction_type', 'equalto', 'earnings')|map(attribute='amount')|sum|default(0)) }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payment Methods -->
+            <div class="transaction-card" style="margin-top: 1rem;">
+                <h3 style="margin-top: 0;">Payment Methods</h3>
+                {% if payment_methods %}
+                    {% for method in payment_methods %}
+                    <div style="padding: 0.75rem; background: var(--background); border-radius: var(--radius); margin-bottom: 0.5rem;">
+                        <div style="font-weight: 600;">{{ method.provider }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">{{ method.account_number }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; padding: 1rem; color: var(--text-muted);">
+                        <p>No payment methods added</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deposit Modal (only shown for non-runners) -->
+{% if user.role != 'runner' %}
+<div id="depositModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('depositModal')">&times;</button>
+        <h3>Deposit Funds</h3>
+        <form method="POST" action="{{ url_for('main.wallet_deposit') }}">
+            <div class="form-group">
+                <label>Amount (Minimum: ₱50.00)</label>
+                <input type="number" name="amount" class="form-control" min="50" step="0.01" required placeholder="Enter amount">
+            </div>
+            <div class="form-group">
+                <label>Payment Method</label>
+                <select name="method" class="form-control" required>
+                    <option value="">Select method</option>
+                    <option value="gcash">GCash</option>
+                    <option value="paymaya">PayMaya</option>
+                    <option value="card">Credit/Debit Card</option>
+                    <option value="bank">Bank Transfer</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary">Deposit</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('depositModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Withdraw Modal -->
+<div id="withdrawModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('withdrawModal')">&times;</button>
+        <h3>Withdraw Funds</h3>
+        <form method="POST" action="{{ url_for('main.wallet_withdraw') }}">
+            <div class="form-group">
+                <label>Amount (Max: ₱{{ "%.2f"|format(user.wallet_balance) }})</label>
+                <input type="number" name="amount" class="form-control" max="{{ user.wallet_balance }}" min="50" step="0.01" required placeholder="Enter amount">
+            </div>
+            <div class="form-group">
+                <label>Withdraw to</label>
+                <select name="method_id" class="form-control" required>
+                    <option value="">Select method</option>
+                    <option value="direct">Direct Transfer (Our team will contact you)</option>
+                    {% if payment_methods %}
+                        <optgroup label="Saved Methods">
+                        {% for method in payment_methods %}
+                            <option value="{{ method.id }}">{{ method.provider }} ({{ method.account_number }})</option>
+                        {% endfor %}
+                        </optgroup>
+                    {% endif %}
+                </select>
+                <small style="display: block; margin-top: 0.5rem; color: var(--text-muted);">
+                    For quick options, we'll contact you for account details
+                </small>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary">Withdraw</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('withdrawModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Modal functions
+function openModal(modalId) {
+    document.getElementById(modalId).style.display = 'block';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    // Withdraw form validation (for all users)
+    const withdrawForm = document.querySelector('form[action*="withdraw"]');
+    if (withdrawForm) {
+        withdrawForm.addEventListener('submit', function(e) {
+            const amount = parseFloat(this.querySelector('input[name="amount"]').value);
+            const maxAmount = parseFloat("{{ user.wallet_balance }}");
+            
+            if (amount < 50) {
+                e.preventDefault();
+                alert('Minimum withdrawal amount is ₱50.00');
+                return false;
+            }
+            
+            if (amount > maxAmount) {
+                e.preventDefault();
+                alert('Withdrawal amount cannot exceed your balance of ₱' + maxAmount.toFixed(2));
+                return false;
+            }
+            
+            const method = this.querySelector('select[name="method_id"]').value;
+            if (!method) {
+                e.preventDefault();
+                alert('Please select a withdrawal method');
+                return false;
+            }
+            
+            return true;
+        });
+    }
+    
+    // Deposit form validation - only if deposit modal exists
+    const depositForm = document.querySelector('form[action*="deposit"]');
+    if (depositForm) {
+        depositForm.addEventListener('submit', function(e) {
+            const amount = parseFloat(this.querySelector('input[name="amount"]').value);
+            if (amount < 50) {
+                e.preventDefault();
+                alert('Minimum deposit amount is ₱50.00');
+                return false;
+            }
+            return true;
+        });
+    }
+});
+</script>
+{% endblock %}

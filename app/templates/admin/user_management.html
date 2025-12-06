@@ -1,0 +1,539 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management - Admin{% endblock %}
+{% block header_title %}User Management{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .search-bar {
+        margin-bottom: 2rem;
+    }
+
+    .search-input {
+        width: 100%;
+        max-width: 400px;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 0.9rem;
+    }
+
+    .users-table {
+        background: var(--surface);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .table-header {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1.5fr 1.2fr 2fr;
+        padding: 1rem 1.5rem;
+        background: var(--primary-light);
+        font-weight: 600;
+        color: var(--text-primary);
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .table-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1.5fr 1.2fr 2fr;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .table-row:hover {
+        background: var(--background);
+    }
+
+    .btn-view {
+        background: var(--info);
+        color: white;
+        border: none;
+    }
+
+    .btn-view:hover {
+        background: #1565c0;
+        transform: translateY(-1px);
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .user-details {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .user-details .name {
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-details .username {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+    .badge-client {
+        background: var(--info);
+        color: white;
+    }
+
+    .badge-runner {
+        background: var(--primary);
+        color: white;
+    }
+
+    .badge-admin {
+        background: var(--accent);
+        color: white;
+    }
+
+    .badge-verified {
+        background: var(--success);
+        color: white;
+    }
+
+    .badge-pending {
+        background: var(--warning);
+        color: white;
+    }
+
+    .badge-rejected {
+        background: var(--error);
+        color: white;
+    }
+
+    .badge-not-requested {
+        background: var(--text-muted);
+        color: white;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        align-items: center;
+    }
+
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+
+    .btn-verify {
+        background: var(--success);
+        color: white;
+        border: none;
+    }
+
+    .btn-verify:hover {
+        background: #2e7d32;
+        transform: translateY(-1px);
+    }
+
+    /* Enhanced Modal Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+        opacity: 1;
+    }
+
+    .modal {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        transform: translateY(-20px);
+        transition: transform 0.3s ease;
+        border: 1px solid var(--border);
+    }
+
+    .modal-overlay.active .modal {
+        transform: translateY(0);
+    }
+
+    .modal-header {
+        padding: 1.5rem 1.5rem 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0;
+        color: var(--text-primary);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: var(--radius);
+        transition: var(--transition);
+        line-height: 1;
+    }
+
+    .modal-close:hover {
+        background: var(--background);
+        color: var(--text-primary);
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem 1.5rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-family: inherit;
+        font-size: 0.9rem;
+        background: var(--surface);
+        color: var(--text-primary);
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.1);
+    }
+
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+        line-height: 1.5;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-help {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
+
+    .user-info-modal {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius);
+        margin-bottom: 1.5rem;
+    }
+
+    .user-avatar-modal {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .user-details-modal .name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .user-details-modal .username {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+
+    .warning-message {
+        background: linear-gradient(135deg, #fff3e0, #ffecb3);
+        border: 1px solid #ffb74d;
+        border-radius: var(--radius);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .warning-icon {
+        color: #f57c00;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        margin-top: 0.1rem;
+    }
+
+    .warning-content h4 {
+        margin: 0 0 0.5rem 0;
+        color: #e65100;
+        font-size: 0.95rem;
+    }
+
+    .warning-content p {
+        margin: 0;
+        color: #ef6c00;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
+    .btn-error {
+        background: linear-gradient(135deg, var(--error), #d32f2f);
+        color: white;
+        border: none;
+    }
+
+    .btn-error:hover {
+        background: linear-gradient(135deg, #d32f2f, #c62828);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-muted);
+    }
+
+    .table-cell {
+        display: flex;
+        align-items: center;
+        min-height: 40px;
+    }
+
+    /* Ensure date column content is properly aligned */
+    .table-row > div:nth-child(4) {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    @media (max-width: 768px) {
+        .table-header, .table-row {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            padding: 1rem;
+        }
+        
+        .action-buttons {
+            justify-content: flex-start;
+        }
+
+        .modal {
+            margin: 1rem;
+            max-height: calc(100vh - 2rem);
+        }
+
+        .modal-footer {
+            flex-direction: column;
+        }
+
+        .modal-footer .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="page-header">
+    <h1 style="margin: 0; font-size: 1.8rem;">User Management</h1>
+    <span class="badge badge-admin">Total Users: {{ users|length }}</span>
+</div>
+
+<div class="search-bar">
+    <input type="text" class="search-input" placeholder="Search users by name, email, or username...">
+</div>
+
+<div class="users-table">
+    <div class="table-header">
+        <div>User</div>
+        <div>Role</div>
+        <div>Verification Status</div>
+        <div>Joined</div>
+        <div>Actions</div>
+    </div>
+
+    {% for user in users %}
+    <div class="table-row">
+        <div class="table-cell">
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ user.username[0]|upper }}
+                </div>
+                <div class="user-details">
+                    <div class="name">{{ user.first_name or 'N/A' }} {{ user.last_name or 'N/A' }}</div>
+                    <div class="username">@{{ user.username }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-cell">
+            <span class="badge badge-{{ user.role }}">
+                {{ user.role|title }}
+            </span>
+        </div>
+        
+        <div class="table-cell">
+            {% if user.verified %}
+                <span class="badge badge-verified">Verified</span>
+            {% elif user.verification_status == 'pending' %}
+                <span class="badge badge-pending">Pending</span>
+            {% elif user.verification_status == 'rejected' %}
+                <span class="badge badge-rejected">Rejected</span>
+            {% else %}
+                <span class="badge badge-not-requested">Not Requested</span>
+            {% endif %}
+        </div>
+        
+        <div class="table-cell">{{ user.created_at.strftime('%Y-%m-%d') }}</div>
+        
+        <div class="table-cell">
+            <div class="action-buttons">
+                <!-- View Button -->
+                <a href="{{ url_for('main.view_user', user_id=user.id) }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-eye"></i> View
+                </a>
+                
+                <!-- Verify Button - Show only for non-verified users with pending verification -->
+                {% if not user.verified and user.verification_status == 'pending' %}
+                    <a href="{{ url_for('main.admin_verify_user', user_id=user.id) }}" class="btn btn-sm btn-verify">
+                        <i class="fas fa-check-circle"></i> Verify
+                    </a>
+                {% endif %}
+                
+                <!-- Edit Button - Always show -->
+                <a href="{{ url_for('main.edit_user', user_id=user.id) }}" class="btn btn-sm btn-accent">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not users %}
+<div class="empty-state">
+    <div class="empty-state-icon">
+        <i class="fas fa-users"></i>
+    </div>
+    <h3 class="empty-state-title">No Users Found</h3>
+    <p class="empty-state-description">There are no users in the system yet.</p>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('.table-row');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = 'grid';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

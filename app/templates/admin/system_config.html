@@ -1,0 +1,866 @@
+{% extends 'base.html' %}
+
+{% block title %}System Configuration - Admin{% endblock %}
+{% block header_title %}System Configuration{% endblock %}
+
+{% block content %}
+<style>
+    .config-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .config-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .config-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+    }
+
+    .tab-btn {
+        padding: 0.75rem 1.5rem;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: var(--transition);
+        font-size: 0.9rem;
+    }
+
+    .tab-btn:hover {
+        color: var(--primary);
+    }
+
+    .tab-btn.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .config-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+
+    .config-card-header {
+        background: var(--primary-light);
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .config-card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .config-card-body {
+        padding: 1.5rem;
+    }
+
+    .config-form {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .config-group {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .config-label {
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .config-description {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+        line-height: 1.4;
+    }
+
+    .config-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-family: inherit;
+        font-size: 0.9rem;
+        background: var(--surface);
+        color: var(--text-primary);
+    }
+
+    .config-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.1);
+    }
+
+    .config-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-family: inherit;
+        font-size: 0.9rem;
+        background: var(--surface);
+        color: var(--text-primary);
+        cursor: pointer;
+    }
+
+    .config-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .currency-symbol {
+        color: var(--text-muted);
+        margin-right: 0.25rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .form-row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .config-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .config-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .config-help {
+        background: var(--background);
+        border-radius: var(--radius);
+        padding: 1rem;
+        margin-top: 1rem;
+        border-left: 4px solid var(--info);
+    }
+
+    .config-help-title {
+        font-weight: 600;
+        color: var(--info);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .config-help-content {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+
+    .badge-updated {
+        background: var(--success);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        animation: fadeInOut 2s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+        .form-row,
+        .form-row-3 {
+            grid-template-columns: 1fr;
+        }
+        
+        .config-actions {
+            flex-direction: column;
+        }
+        
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        
+
+    }
+</style>
+
+<div class="config-container">
+    <div class="config-header">
+        <h1 style="margin: 0; font-size: 1.8rem;">System Configuration</h1>
+        <div id="saveStatus" style="display: none;">
+            <span class="badge-updated">Changes Saved!</span>
+        </div>
+    </div>
+
+    <!-- Configuration Tabs -->
+    <div class="config-tabs">
+        <button class="tab-btn active" data-tab="pricing">Pricing & Fees</button>
+        <button class="tab-btn" data-tab="distance">Distance Parameters</button>
+    </div>
+
+    <!-- Pricing & Fees Tab -->
+    <div class="tab-content active" id="pricing-tab">
+        <div class="config-card">
+            <div class="config-card-header">
+                <h2 class="config-card-title">Pricing & Service Fees Configuration</h2>
+            </div>
+            <div class="config-card-body">
+                <form class="config-form" id="pricingForm">
+                    <div class="config-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-tag"></i>
+                            Base Service Fees
+                        </h3>
+                        <div class="form-row-3">
+                            <div class="config-group">
+                                <label class="config-label">Food Delivery</label>
+                                <div style="position: relative;">
+                                    <span class="currency-symbol">₱</span>
+                                    <input type="number" class="config-input" id="foodDeliveryFee" 
+                                           value="100.00" min="50" step="5" style="padding-left: 1.5rem;">
+                                </div>
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">Grocery Shopping</label>
+                                <div style="position: relative;">
+                                    <span class="currency-symbol">₱</span>
+                                    <input type="number" class="config-input" id="groceryFee" 
+                                           value="150.00" min="80" step="5" style="padding-left: 1.5rem;">
+                                </div>
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">Package Pickup</label>
+                                <div style="position: relative;">
+                                    <span class="currency-symbol">₱</span>
+                                    <input type="number" class="config-input" id="packageFee" 
+                                           value="80.00" min="40" step="5" style="padding-left: 1.5rem;">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row-3">
+                            <div class="config-group">
+                                <label class="config-label">Document Processing</label>
+                                <div style="position: relative;">
+                                    <span class="currency-symbol">₱</span>
+                                    <input type="number" class="config-input" id="documentFee" 
+                                           value="120.00" min="60" step="5" style="padding-left: 1.5rem;">
+                                </div>
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">Other Errands</label>
+                                <div style="position: relative;">
+                                    <span class="currency-symbol">₱</span>
+                                    <input type="number" class="config-input" id="otherErrandFee" 
+                                           value="100.00" min="50" step="5" style="padding-left: 1.5rem;">
+                                </div>
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">Minimum Service Fee</label>
+                                <div style="position: relative;">
+                                    <span class="currency-symbol">₱</span>
+                                    <input type="number" class="config-input" id="minServiceFee" 
+                                           value="50.00" min="10" step="5" style="padding-left: 1.5rem;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-percentage"></i>
+                            Commission & Tax Settings
+                        </h3>
+                        <div class="form-row">
+                            <div class="config-group">
+                                <label class="config-label">Platform Commission (%)</label>
+                                <input type="number" class="config-input" id="platformCommission" 
+                                       value="10.00" min="0" max="30" step="0.5">
+                                <div class="config-description">
+                                    Percentage taken by platform from each transaction (0-30%)
+                                </div>
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">VAT Tax Rate (%)</label>
+                                <input type="number" class="config-input" id="vatRate" 
+                                       value="12.00" min="0" max="20" step="0.1">
+                                <div class="config-description">
+                                    Value Added Tax percentage applied to all transactions
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-help">
+                        <div class="config-help-title">
+                            <i class="fas fa-info-circle"></i>
+                            Pricing Formula
+                        </div>
+                        <div class="config-help-content">
+                            Total Fee = Base Service Fee + Delivery Fee + (Base + Delivery) × VAT Rate<br>
+                            Platform Commission = (Base + Delivery) × Commission Rate<br>
+                            Runner Earnings = Total Fee - Platform Commission
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Distance Parameters Tab -->
+    <div class="tab-content" id="distance-tab">
+        <div class="config-card">
+            <div class="config-card-header">
+                <h2 class="config-card-title">Distance Calculation Parameters</h2>
+            </div>
+            <div class="config-card-body">
+                <form class="config-form" id="distanceForm">
+                    <div class="config-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-route"></i>
+                            Delivery Fee Calculation
+                        </h3>
+                        <div class="form-row-3">
+                            <div class="config-group">
+                                <label class="config-label">Base Booking Fee</label>
+                                <div style="position: relative;">
+                                    <span class="currency-symbol">₱</span>
+                                    <input type="number" class="config-input" id="baseDeliveryFee" 
+                                           value="50.00" min="20" step="5" style="padding-left: 1.5rem;">
+                                </div>
+                                <div class="config-description">
+                                    Fixed delivery charge per errand
+                                </div>
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">Per Kilometer Rate</label>
+                                <div style="position: relative;">
+                                    <span class="currency-symbol">₱</span>
+                                    <input type="number" class="config-input" id="perKmRate" 
+                                           value="15.00" min="5" step="1" style="padding-left: 1.5rem;">
+                                </div>
+                                <div class="config-description">
+                                    Additional charge per kilometer traveled
+                                </div>
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">Maximum Distance (km)</label>
+                                <input type="number" class="config-input" id="maxDistance" 
+                                       value="20" min="5" max="100" step="1">
+                                <div class="config-description">
+                                    Maximum service distance in kilometers
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Barangay Distance Matrix
+                        </h3>
+                        <div class="form-row-3">
+                            <div class="config-group">
+                                <label class="config-label">Barangay 1 (km)</label>
+                                <input type="number" class="config-input" id="barangay1Distance" 
+                                       value="2.5" min="0" max="50" step="0.1">
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">Barangay 2 (km)</label>
+                                <input type="number" class="config-input" id="barangay2Distance" 
+                                       value="5.0" min="0" max="50" step="0.1">
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">Barangay 3 (km)</label>
+                                <input type="number" class="config-input" id="barangay3Distance" 
+                                       value="7.5" min="0" max="50" step="0.1">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row-3">
+                            <div class="config-group">
+                                <label class="config-label">Barangay 4 (km)</label>
+                                <input type="number" class="config-input" id="barangay4Distance" 
+                                       value="10.0" min="0" max="50" step="0.1">
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">Barangay 5 (km)</label>
+                                <input type="number" class="config-input" id="barangay5Distance" 
+                                       value="12.5" min="0" max="50" step="0.1">
+                            </div>
+                            
+                            <div class="config-group">
+                                <label class="config-label">Default Distance (km)</label>
+                                <input type="number" class="config-input" id="defaultDistance" 
+                                       value="5.0" min="0" max="50" step="0.1">
+                                <div class="config-description">
+                                    Used when barangay distance is not specified
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-help">
+                        <div class="config-help-title">
+                            <i class="fas fa-calculator"></i>
+                            Delivery Fee Formula
+                        </div>
+                        <div class="config-help-content">
+                            Delivery Fee = Base Delivery Fee + (Distance in km × Per Kilometer Rate)<br>
+                            If Distance > Maximum Distance, service is not available<br>
+                            Distance is calculated from system distance matrix or mapping API
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Actions -->
+    <div class="config-actions">
+        <button type="button" class="btn btn-secondary" onclick="resetToDefaults()">
+            <i class="fas fa-undo"></i> Reset to Defaults
+        </button>
+        <button type="button" class="btn btn-accent" onclick="testSettings()">
+            <i class="fas fa-cog"></i> Test Settings
+        </button>
+        <button type="button" class="btn btn-primary" onclick="saveAllSettings()">
+            <i class="fas fa-save"></i> Save All Configuration
+        </button>
+    </div>
+</div>
+
+<script>
+// Load settings from server
+function loadSystemConfig() {
+    fetch('/api/system-config/get')
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && data.config) {
+            const config = data.config;
+            
+            // Populate all form fields
+            Object.keys(config).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    if (element.type === 'checkbox') {
+                        element.checked = config[key] === true || config[key] === 'true' || config[key] === '1';
+                    } else if (element.type === 'select-one') {
+                        element.value = config[key];
+                    } else if (element.type === 'number') {
+                        // Ensure numeric values are properly formatted
+                        const floatValue = parseFloat(config[key]);
+                        if (!isNaN(floatValue)) {
+                            element.value = floatValue.toFixed(2);
+                        }
+                    } else {
+                        element.value = config[key];
+                    }
+                }
+            });
+            
+            console.log('System configuration loaded from server:', config);
+        } else {
+            console.log('Using default configuration');
+            // Set default values if not loaded
+            setDefaultValues();
+        }
+    })
+    .catch(error => {
+        console.log('Error loading system config, using defaults:', error);
+        setDefaultValues();
+    });
+}
+
+function updateGlobalPricingConfig(config) {
+    // Store in localStorage for client-side access
+    localStorage.setItem('systemConfig', JSON.stringify(config));
+    
+    // Also store in sessionStorage for immediate use
+    sessionStorage.setItem('pricingConfig', JSON.stringify({
+        foodDeliveryFee: parseFloat(config.foodDeliveryFee) || 100.00,
+        groceryFee: parseFloat(config.groceryFee) || 150.00,
+        packageFee: parseFloat(config.packageFee) || 80.00,
+        documentFee: parseFloat(config.documentFee) || 120.00,
+        otherErrandFee: parseFloat(config.otherErrandFee) || 100.00,
+        platformCommission: parseFloat(config.platformCommission) || 10.00,
+        vatRate: parseFloat(config.vatRate) || 12.00,
+        minServiceFee: parseFloat(config.minServiceFee) || 50.00,
+        baseDeliveryFee: parseFloat(config.baseDeliveryFee) || 50.00,
+        perKmRate: parseFloat(config.perKmRate) || 15.00
+    }));
+    
+    console.log('Pricing configuration updated globally');
+}
+
+// Set default values for form fields
+function setDefaultValues() {
+    const defaults = {
+        // Pricing
+        'foodDeliveryFee': '100.00',
+        'groceryFee': '150.00',
+        'packageFee': '80.00',
+        'documentFee': '120.00',
+        'otherErrandFee': '100.00',
+        'minServiceFee': '50.00',
+        'platformCommission': '10.00',
+        'vatRate': '12.00',
+        
+        // Distance
+        'baseDeliveryFee': '50.00',
+        'perKmRate': '15.00',
+        'maxDistance': '20',
+        'barangay1Distance': '2.5',
+        'barangay2Distance': '5.0',
+        'barangay3Distance': '7.5',
+        'barangay4Distance': '10.0',
+        'barangay5Distance': '12.5',
+        'defaultDistance': '5.0',
+    };
+    
+    Object.keys(defaults).forEach(key => {
+        const element = document.getElementById(key);
+        if (element && !element.value) {
+            element.value = defaults[key];
+        }
+    });
+}
+
+// Save all settings to server
+function saveAllSettings() {
+    // Collect all form data
+    const allForms = document.querySelectorAll('.config-form');
+    const config = {};
+    
+    allForms.forEach(form => {
+        const inputs = form.querySelectorAll('input, select, textarea');
+        
+        inputs.forEach(input => {
+            if (input.id) {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    config[input.id] = input.checked;
+                } else if (input.type === 'number') {
+                    config[input.id] = parseFloat(input.value) || 0;
+                } else {
+                    config[input.id] = input.value;
+                }
+            }
+        });
+    });
+    
+    // Validate required fields
+    const requiredFields = ['foodDeliveryFee', 'groceryFee', 'packageFee', 'documentFee', 'otherErrandFee', 
+                          'platformCommission', 'vatRate', 'baseDeliveryFee', 'perKmRate', 'maxDistance'];
+    
+    for (const field of requiredFields) {
+        if (!config[field] && config[field] !== 0) {
+            alert(`Please fill in all required fields. Missing: ${field}`);
+            return;
+        }
+    }
+    
+    // Show loading
+    const saveBtn = document.querySelector('button[onclick="saveAllSettings()"]');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    saveBtn.disabled = true;
+    
+    // Send to server
+    fetch('/api/system-config/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const saveStatus = document.getElementById('saveStatus');
+            saveStatus.style.display = 'block';
+            saveStatus.innerHTML = '<span class="badge-updated">Changes Saved Successfully!</span>';
+            
+            // Update global pricing config for create_errand.html
+            updateGlobalPricingConfig(config);
+            
+            // Hide status after 3 seconds
+            setTimeout(() => {
+                saveStatus.style.display = 'none';
+            }, 3000);
+            
+            // Show success alert
+            alert('Configuration saved successfully! Changes will be applied globally.');
+        } else {
+            alert('Error saving configuration: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error saving configuration: ' + error.message);
+        console.error('Save error:', error);
+    })
+    .finally(() => {
+        // Restore button
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+function testSettings() {
+    const pricingConfig = {
+        foodDeliveryFee: parseFloat(document.getElementById('foodDeliveryFee').value) || 100.00,
+        groceryFee: parseFloat(document.getElementById('groceryFee').value) || 150.00,
+        platformCommission: parseFloat(document.getElementById('platformCommission').value) || 10.00,
+        vatRate: parseFloat(document.getElementById('vatRate').value) || 12.00,
+        baseDeliveryFee: parseFloat(document.getElementById('baseDeliveryFee').value) || 50.00,
+        perKmRate: parseFloat(document.getElementById('perKmRate').value) || 15.00
+    };
+    
+    // Calculate example errand
+    const baseFee = pricingConfig.foodDeliveryFee;
+    const deliveryFee = pricingConfig.baseDeliveryFee + (5 * pricingConfig.perKmRate);
+    const subtotal = baseFee + deliveryFee;
+    const vat = subtotal * (pricingConfig.vatRate / 100);
+    const commission = subtotal * (pricingConfig.platformCommission / 100);
+    const total = subtotal + vat;
+    const runnerEarnings = subtotal - commission;
+    
+    const testResults = `
+        Test Calculation Results:
+        -------------------------
+        Base Service Fee: ₱${baseFee.toFixed(2)}
+        Delivery Fee (5km): ₱${deliveryFee.toFixed(2)}
+        Subtotal: ₱${subtotal.toFixed(2)}
+        VAT (${pricingConfig.vatRate}%): ₱${vat.toFixed(2)}
+        Platform Commission (${pricingConfig.platformCommission}%): ₱${commission.toFixed(2)}
+        -------------------------
+        Total Client Pays: ₱${total.toFixed(2)}
+        Runner Earnings: ₱${runnerEarnings.toFixed(2)}
+        Platform Revenue: ₱${commission.toFixed(2)}
+    `;
+    
+    alert(testResults);
+}
+
+// Reset to default values
+function resetToDefaults() {
+    if (confirm('Are you sure you want to reset all settings to default values?')) {
+        // Call server to reset to defaults
+        fetch('/api/system-config/reset', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadSystemConfig(); // Reload the defaults
+                flashMessage('Settings reset to defaults!', 'success');
+            } else {
+                flashMessage('Error resetting settings: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Reset error:', error);
+            flashMessage('Error resetting settings', 'error');
+        });
+    }
+}
+
+// Helper function for flash messages
+function flashMessage(message, type = 'info') {
+    const flashDiv = document.createElement('div');
+    flashDiv.className = `flash-message flash-${type}`;
+    flashDiv.innerHTML = `
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()">&times;</button>
+    `;
+    
+    document.body.appendChild(flashDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (flashDiv.parentElement) {
+            flashDiv.remove();
+        }
+    }, 5000);
+}
+
+
+// Tab switching functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            
+            // Update active tab button
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show active tab content
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === `${tabId}-tab`) {
+                    content.classList.add('active');
+                }
+            });
+        });
+    });
+    
+    // Load config on page load
+    loadSystemConfig();
+});
+
+const flashStyle = document.createElement('style');
+flashStyle.textContent = `
+    .flash-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: var(--radius);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-md);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-width: 300px;
+        max-width: 400px;
+        animation: slideIn 0.3s ease;
+    }
+    
+    .flash-success {
+        border-left: 4px solid var(--success);
+        background: color-mix(in srgb, var(--success) 10%, var(--surface));
+    }
+    
+    .flash-error {
+        border-left: 4px solid var(--error);
+        background: color-mix(in srgb, var(--error) 10%, var(--surface));
+    }
+    
+    .flash-info {
+        border-left: 4px solid var(--info);
+        background: color-mix(in srgb, var(--info) 10%, var(--surface));
+    }
+    
+    .flash-message button {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-muted);
+        margin-left: 1rem;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(flashStyle);
+
+</script>
+{% endblock %}

@@ -1,0 +1,540 @@
+{% extends 'base.html' %}
+
+{% block title %}Runner Dashboard{% endblock %}
+{% block header_title %}Runner Dashboard{% endblock %}
+
+{% block sidebar %}
+<!-- Runner Sidebar -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <a href="{{ url_for('main.dashboard') }}" class="sidebar-brand">
+            <div class="brand-logo">G</div>
+            <span class="brand-text">GrabItDone</span>
+        </a>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-label">Main</div>
+            <ul class="nav-items">
+                <li class="nav-item">
+                    <a href="{{ url_for('main.dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                        <i class="nav-icon fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('main.available_errands_runner') }}" class="nav-link {% if request.endpoint == 'available_errands_runner' %}active{% endif %}">
+                        <i class="nav-icon fas fa-search"></i>
+                        <span>Available Errands</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('main.my_errands_runner') }}" class="nav-link {% if request.endpoint == 'my_errands_runner' %}active{% endif %}">
+                        <i class="nav-icon fas fa-running"></i>
+                        <span>My Errands</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('main.earnings_runner') }}" class="nav-link {% if request.endpoint == 'earnings_runner' %}active{% endif %}">
+                        <i class="nav-icon fas fa-dollar-sign"></i>
+                        <span>Earnings</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('main.runner_errand_history') }}" class="nav-link {% if request.endpoint == 'runner_errand_history' %}active{% endif %}">
+                        <i class="nav-icon fas fa-history"></i>
+                        <span>History</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Account</div>
+            <ul class="nav-items">
+                <li class="nav-item">
+                    <a href="{{ url_for('main.profile') }}" class="nav-link {% if request.endpoint == 'profile' %}active{% endif %}">
+                        <i class="nav-icon fas fa-user"></i>
+                        <span>Profile Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-card">
+            <div class="user-avatar">
+                {{ session.get('username', 'U')[0]|upper }}
+            </div>
+            <div class="user-info">
+                <div class="user-name">{{ session.get('username', 'User') }}</div>
+                <div class="user-role">Runner</div>
+            </div>
+            <a href="{{ url_for('main.logout') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </div>
+</aside>
+{% endblock %}
+
+{% block content %}
+{% if not user.verified and user.verification_status != 'approved' %}
+<div class="verification-banner" style="background: linear-gradient(135deg, var(--warning-light), var(--warning-lighter)); border: 1px solid var(--warning); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 2rem;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="font-size: 1.5rem; color: var(--warning);">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div style="flex: 1;">
+            <h3 style="margin: 0 0 0.5rem 0; color: var(--warning-dark);">Account Verification Required</h3>
+            <p style="margin: 0; color: var(--text-secondary);">
+                You need to verify your account before you can accept errands. 
+                {% if user.verification_status == 'pending' %}
+                Your verification request is under review. Please wait for approval.
+                {% elif user.verification_status == 'rejected' %}
+                Your previous verification was rejected. Please submit a new request.
+                {% else %}
+                <a href="{{ url_for('main.verification') }}" style="color: var(--primary); font-weight: 600;">Click here to verify your account</a>.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        text-align: center;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--primary-light), var(--primary));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .stat-change {
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+
+    .stat-change.positive {
+        color: var(--success);
+    }
+
+    .earnings-breakdown {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin: 2rem 0;
+    }
+
+    .earnings-chart {
+        background: var(--surface);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+
+    .chart-placeholder {
+        height: 200px;
+        background: linear-gradient(135deg, var(--primary-light), var(--background));
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 1rem;
+    }
+
+    .earnings-summary {
+        background: var(--surface);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .summary-item:last-child {
+        border-bottom: none;
+    }
+
+    .summary-label {
+        color: var(--text-secondary);
+    }
+
+    .summary-value {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+    }
+
+    .quick-action-card {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        text-align: center;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: var(--transition);
+    }
+
+    .quick-action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+    }
+
+    .quick-action-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: white;
+        font-size: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+        .earnings-breakdown {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+        }
+        
+        .quick-actions-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="dashboard-content">
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="stat-value">{{ available_errands|length }}</div>
+            <div class="stat-label">Available Errands</div>
+            <div class="stat-change positive">
+                <i class="fas fa-bolt"></i>
+                Ready to accept
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-running"></i>
+            </div>
+            <div class="stat-value">{{ accepted_errands|length }}</div>
+            <div class="stat-label">My Errands</div>
+            <div class="stat-change positive">
+                <i class="fas fa-tasks"></i>
+                In progress
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-value">{{ completed_count }}</div>
+            <div class="stat-label">Completed</div>
+            <div class="stat-change positive">
+                <i class="fas fa-star"></i>
+                {{ ((completed_count / (accepted_errands|length)) * 100)|round(1) if accepted_errands|length > 0 else 0 }}% rate
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-value">₱{{ "%.0f"|format(total_earnings) }}</div>
+            <div class="stat-label">Total Earnings</div>
+            <div class="stat-change positive">
+                <i class="fas fa-chart-line"></i>
+                ₱{{ "%.0f"|format(weekly_earnings) }}/week
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="stat-value">₱{{ "%.2f"|format(user.wallet_balance) }}</div>
+            <div class="stat-label">Wallet Balance</div>
+            <div class="stat-trend">
+                <a href="{{ url_for('main.wallet') }}" style="color: inherit; text-decoration: none;">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>Withdraw</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Earnings Breakdown -->
+    <div class="earnings-breakdown">
+        <div class="earnings-chart">
+            <h3 style="margin-bottom: 1.5rem;">Earnings Overview</h3>
+            <div class="chart-placeholder">
+                <div style="text-align: center;">
+                    <i class="fas fa-chart-bar" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <p>Earnings visualization</p>
+                    <small>Total: ₱{{ "%.2f"|format(total_earnings) }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="earnings-summary">
+            <h3 style="margin-bottom: 1.5rem;">Earnings Summary</h3>
+            <div class="summary-item">
+                <span class="summary-label">This Week</span>
+                <span class="summary-value">₱{{ "%.2f"|format(weekly_earnings) }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Completed Jobs</span>
+                <span class="summary-value">{{ completed_count }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Avg. per Job</span>
+                <span class="summary-value">₱{{ "%.2f"|format(total_earnings / completed_count if completed_count > 0 else 0) }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Active Jobs</span>
+                <span class="summary-value">{{ accepted_errands|length - completed_count }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions-grid">
+        <a href="{{ url_for('main.available_errands_runner') }}" class="quick-action-card">
+            <div class="quick-action-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <h3>Find Errands</h3>
+            <p>Browse available tasks</p>
+        </a>
+
+        <a href="{{ url_for('main.my_errands_runner') }}" class="quick-action-card">
+            <div class="quick-action-icon">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <h3>My Errands</h3>
+            <p>Manage current tasks</p>
+        </a>
+
+        <a href="{{ url_for('main.earnings_runner') }}" class="quick-action-card">
+            <div class="quick-action-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>Earnings</h3>
+            <p>View detailed stats</p>
+        </a>
+
+        <a href="{{ url_for('main.profile') }}" class="quick-action-card">
+            <div class="quick-action-icon">
+                <i class="fas fa-user-cog"></i>
+            </div>
+            <h3>Profile</h3>
+            <p>Update settings</p>
+        </a>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Recent Activity</h2>
+        </div>
+        <div class="card-body">
+            {% if accepted_errands %}
+                <div class="activity-list">
+                    {% for errand in accepted_errands[:5] %}
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fas fa-{{ 'check-circle' if errand.status == 'Completed' else 'running' }}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">
+                                {{ errand.category }} - {{ errand.status }}
+                            </div>
+                            <div class="activity-time">
+                                {{ errand.created_at.strftime('%b %d, %Y at %H:%M') }}
+                                {% if errand.status == 'Completed' and errand.completed_at %}
+                                • Completed: {{ errand.completed_at.strftime('%b %d') }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="activity-amount">
+                            ₱{{ "%.2f"|format(errand.final_fee or errand.proposed_fee) }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Active Errands</h3>
+                    <p class="empty-state-description">Start by accepting available errands!</p>
+                    <a href="{{ url_for('main.available_errands_runner') }}" class="btn btn-primary" style="margin-top: 1rem;">
+                        Browse Errands
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .activity-list {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-light);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .activity-time {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .activity-amount {
+        font-weight: 600;
+        color: var(--primary);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--text-muted);
+    }
+
+    .empty-state-title {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary);
+    }
+
+    .empty-state-description {
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}Active Errands{% endblock %}
+{% block header_title %}Active Errands{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .errand-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .errand-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        transition: var(--transition);
+    }
+
+    .errand-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .errand-header {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .errand-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .errand-meta {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .errand-details {
+        padding: 1.25rem;
+        display: grid;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .errand-actions {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .stats-mini {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin: 2rem 0;
+    }
+
+    .stat-mini-card {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        text-align: center;
+        border: 1px solid var(--border);
+    }
+
+    .stat-mini-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-mini-label {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+        .errand-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-mini {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .errand-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="page-header">
+    <h1 style="margin: 0; font-size: 1.8rem;">Active Errands</h1>
+    <a href="{{ url_for('main.create_errand') }}" class="btn btn-primary">Create New Errand</a>
+</div>
+
+<!-- Quick Stats -->
+<div class="stats-mini">
+    <div class="stat-mini-card">
+        <div class="stat-mini-value">{{ active_errands|length }}</div>
+        <div class="stat-mini-label">Total Active</div>
+    </div>
+    <div class="stat-mini-card">
+        <div class="stat-mini-value">{{ (active_errands|selectattr('status', 'equalto', 'Pending')|list|length) }}</div>
+        <div class="stat-mini-label">Pending</div>
+    </div>
+    <div class="stat-mini-card">
+        <div class="stat-mini-value">{{ (active_errands|selectattr('status', 'equalto', 'In Progress')|list|length) }}</div>
+        <div class="stat-mini-label">In Progress</div>
+    </div>
+    <div class="stat-mini-card">
+        <div class="stat-mini-value">{{ (active_errands|selectattr('status', 'equalto', 'Completed')|list|length) }}</div>
+        <div class="stat-mini-label">Completed</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Your Active Errands</h2>
+        <span class="badge badge-primary">{{ active_errands|length }} active</span>
+    </div>
+    <div class="card-body">
+        {% if active_errands %}
+        <div class="errand-grid">
+            {% for errand in active_errands %}
+            <div class="errand-card">
+                <div class="errand-header">
+                    <div>
+                        <h3 class="errand-title">#{{ errand.id }} - {{ errand.category }}</h3>
+                        <span class="badge badge-{{ errand.status|lower|replace(' ', '-') }}">{{ errand.status }}</span>
+                    </div>
+                </div>
+                <div class="errand-meta">
+                    <strong>From:</strong> {{ errand.pickup_address }}<br>
+                    <strong>To:</strong> {{ errand.dropoff_address }}
+                </div>
+                <div class="errand-details">
+                    <div><strong>Preferred Time:</strong> {{ errand.preferred_time or 'Flexible' }}</div>
+                    <div><strong>Fee:</strong> ₱{{ "%.2f"|format(errand.proposed_fee) }}</div>
+                    {% if errand.runner %}
+                    <div><strong>Runner:</strong> {{ errand.runner.username }}</div>
+                    {% endif %}
+                    <div><strong>Created:</strong> {{ errand.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+                <div class="errand-actions">
+                    {% if errand.status != 'Completed' and errand.status != 'Canceled' %}
+                        <a href="{{ url_for('main.update_errand_status', errand_id=errand.id, status='Canceled') }}" 
+                        class="btn btn-error btn-sm"
+                        onclick="return confirm('Are you sure you want to cancel this errand?')">
+                            Cancel
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('main.view_errand', errand_id=errand.id) }}" class="btn btn-secondary btn-sm">
+                        View Details
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <h3 class="empty-state-title">No Active Errands</h3>
+            <p class="empty-state-description">You don't have any active errands at the moment.</p>
+            <a href="{{ url_for('main.create_errand') }}" class="btn btn-primary">Create Your First Errand</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}User Documents - {{ user.username }}{% endblock %}
+{% block header_title %}User Documents - {{ user.username }}{% endblock %}
+
+{% block content %}
+<style>
+    .documents-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+    }
+    
+    .documents-header {
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        color: white;
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        margin-bottom: 2rem;
+    }
+    
+    .document-group {
+        margin-bottom: 2.5rem;
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+    
+    .document-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        background: var(--background);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+    }
+    
+    .document-info {
+        flex: 1;
+    }
+    
+    .document-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+</style>
+
+<div class="documents-container">
+    <div class="documents-header">
+        <h2 style="margin: 0;">Verification Documents</h2>
+        <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">
+            {{ user.username }} - {{ user.role|title }} - Total: {{ documents|length }} document(s)
+        </p>
+    </div>
+    
+    {% for doc_type, docs_list in grouped_docs.items() %}
+    <div class="document-group">
+        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+            {{ doc_type.replace('_', ' ')|title }} Documents ({{ docs_list|length }})
+        </h3>
+        
+        {% for doc in docs_list %}
+        <div class="document-item">
+            <div class="document-info">
+                <strong>{{ doc.original_name }}</strong><br>
+                <small style="color: var(--text-muted);">
+                    Size: {{ (doc.file_size / 1024)|round|int }} KB | 
+                    Uploaded: {{ doc.uploaded_time|timestamp_to_date }} |
+                    Type: {{ doc.filename.split('.')[-1]|upper }}
+                </small>
+            </div>
+            <div class="document-actions">
+                <a href="{{ url_for('main.view_verification_doc', user_id=user.id, doc_type=doc.document_type) }}" 
+                   target="_blank" 
+                   class="btn btn-sm btn-primary">
+                    <i class="fas fa-eye"></i> View
+                </a>
+                <a href="{{ url_for('main.view_verification_doc', user_id=user.id, doc_type=doc.document_type) }}" 
+                   download="{{ doc.original_name }}"
+                   class="btn btn-sm btn-secondary">
+                    <i class="fas fa-download"></i> Download
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem; background: var(--surface); border-radius: var(--radius-lg);">
+        <i class="fas fa-folder-open" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+        <h3>No Documents Found</h3>
+        <p style="color: var(--text-secondary);">This user has not uploaded any verification documents yet.</p>
+    </div>
+    {% endfor %}
+    
+    <div style="margin-top: 2rem; text-align: center;">
+        <a href="{{ url_for('main.admin_verify_user', user_id=user.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Verification
+        </a>
+        <a href="{{ url_for('main.admin_users') }}" class="btn btn-primary">
+            <i class="fas fa-users"></i> Back to Users
+        </a>
+    </div>
+</div>
+{% endblock %}

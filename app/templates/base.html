@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrabItDone - {% block title %}{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #C9B59C;
+            --primary-dark: #B8A48B;
+            --primary-light: #E8DED1;
+            --secondary: #D9CFC7;
+            --accent: #A58C6D;
+            --background: #F9F8F6;
+            --surface: #FFFFFF;
+            --text-primary: #2D3748;
+            --text-secondary: #718096;
+            --text-muted: #A0AEC0;
+            --border: #E2E8F0;
+            --success: #48BB78;
+            --warning: #ED8936;
+            --error: #F56565;
+            --info: #4299E1;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius: 8px;
+            --radius-lg: 16px;
+            
+            /* Sidebar variables */
+            --sidebar-width: 280px;
+            --sidebar-width-collapsed: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--background);
+            min-height: 100vh;
+        }
+
+        /* Public Layout (for login, register, index, forgot_password) */
+        .public-layout {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header for public pages */
+        .public-header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .public-header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .public-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .brand-logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .brand-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .public-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* App Layout for authenticated pages */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Sidebar Base Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-width-collapsed);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--surface);
+            z-index: 10;
+            flex-shrink: 0;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            padding: 1.5rem;
+            justify-content: center;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .sidebar-brand {
+            justify-content: center;
+        }
+
+        .sidebar.collapsed .brand-text {
+            display: none;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-label {
+            padding: 0.5rem 1.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .sidebar.collapsed .nav-label {
+            padding: 0.5rem 0.5rem;
+            text-align: center;
+            font-size: 0.6rem;
+        }
+
+        .nav-items {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .nav-link {
+            padding: 0.75rem;
+            justify-content: center;
+        }
+
+        .nav-link:hover {
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .nav-link.active {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border-left-color: var(--primary);
+        }
+
+        .sidebar.collapsed .nav-link.active {
+            border-left: none;
+            border-radius: var(--radius);
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .nav-text {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .nav-text {
+            display: none;
+        }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+            flex-shrink: 0;
+        }
+
+        .sidebar.collapsed .sidebar-footer {
+            padding: 1rem;
+        }
+
+        .footer-nav-items {
+            list-style: none;
+        }
+
+        .footer-nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius);
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .footer-nav-link {
+            padding: 0.75rem;
+            justify-content: center;
+        }
+
+        .footer-nav-link:hover {
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .footer-nav-icon {
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .footer-nav-text {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .footer-nav-text {
+            display: none;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background: var(--background);
+            margin-left: var(--sidebar-width);
+        }
+
+        .main-content.expanded {
+            margin-left: var(--sidebar-width-collapsed);
+        }
+
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 99;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius);
+            flex-shrink: 0;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        /* Notification Bell */
+        .notification-bell {
+            position: relative;
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notification-bell:hover {
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--error);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .user-welcome {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            padding: 2rem;
+            background: var(--background);
+            overflow-x: hidden;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--background);
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-lg {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .card-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            background: var(--background);
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            margin-bottom: 1.5rem;
+        }
+
+        .flash {
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius);
+            margin-bottom: 0.75rem;
+            border-left: 4px solid;
+        }
+
+        .flash-success {
+            border-left-color: var(--success);
+            background: var(--surface);
+        }
+
+        .flash-error {
+            border-left-color: var(--error);
+            background: var(--surface);
+        }
+
+        /* Form Controls */
+        .form-control {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: 0.9rem;
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+
+        /* Remove padding from base form-control and let specific pages handle it */
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.1);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        /* Mobile Sidebar Styles */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            :root {
+                --sidebar-width: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+                background: var(--background);
+                margin-left: var(--sidebar-width);
+                transition: margin-left 0.3s ease; /* Smooth transition */
+                width: calc(100% - var(--sidebar-width)); /* Add this */
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+
+            .main {
+                padding: 1rem;
+            }
+
+            .public-header {
+                padding: 1rem;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+            .header-actions {
+                gap: 1rem;
+            }
+
+            .user-welcome {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 85%;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body class="{% if request.endpoint in ['main.index', 'main.login', 'main.register', 'main.forgot_password'] %}public-layout{% endif %}">
+    {% if request.endpoint in ['main.index', 'main.login', 'main.register', 'main.forgot_password'] %}
+    <!-- Public Header for Index, Login, Register, Forgot Password -->
+    <header class="public-header">
+        <div class="public-header-content">
+            <a href="{{ url_for('main.index') }}" class="public-brand">
+                <div class="brand-logo">G</div>
+                <span class="brand-text">GrabItDone</span>
+            </a>
+            <nav class="public-nav">
+                {% if session.get('user_id') %}
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-sm">Dashboard</a>
+                <a href="{{ url_for('main.logout') }}" class="btn btn-secondary btn-sm">Logout</a>
+                {% else %}
+                <a href="{{ url_for('main.login') }}" class="btn btn-secondary btn-sm">Login</a>
+                <a href="{{ url_for('main.register') }}" class="btn btn-primary btn-sm">Sign Up</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+    {% else %}
+    <!-- Regular App Layout for authenticated pages -->
+    <div class="app-container">
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        
+        <!-- Sidebar -->
+        <aside class="sidebar {% if session.get('sidebar_collapsed') %}collapsed{% endif %}" id="sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('main.dashboard') }}" class="sidebar-brand">
+                    <div class="brand-logo">G</div>
+                    <span class="brand-text">GrabItDone</span>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <!-- Navigation Menu -->
+                <div class="nav-section">
+                    <div class="nav-label">Main</div>
+                <ul class="nav-items">
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.dashboard') }}" class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+                            <i class="fas fa-home nav-icon"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </li>
+                    
+                    {% if user_role == 'client' %}
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.create_errand') }}" class="nav-link {% if request.endpoint == 'main.create_errand' %}active{% endif %}">
+                            <i class="fas fa-plus-circle nav-icon"></i>
+                            <span class="nav-text">Create Errand</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.active_errands') }}" class="nav-link {% if request.endpoint == 'main.active_errands' %}active{% endif %}">
+                            <i class="fas fa-tasks nav-icon"></i>
+                            <span class="nav-text">Active Errands</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.errand_history') }}" class="nav-link {% if request.endpoint == 'main.errand_history' %}active{% endif %}">
+                            <i class="fas fa-history nav-icon"></i>
+                            <span class="nav-text">Errand History</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.wallet') }}" class="nav-link {% if request.endpoint == 'main.wallet' %}active{% endif %}">
+                            <i class="fas fa-wallet nav-icon"></i>
+                            <span class="nav-text">My Wallet</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% if user_role == 'runner' %}
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.available_errands_runner') }}" class="nav-link {% if request.endpoint == 'main.available_errands_runner' %}active{% endif %}">
+                            <i class="fas fa-search nav-icon"></i>
+                            <span class="nav-text">Available Errands</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.my_errands_runner') }}" class="nav-link {% if request.endpoint == 'main.my_errands_runner' %}active{% endif %}">
+                            <i class="fas fa-running nav-icon"></i>
+                            <span class="nav-text">My Errands</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.earnings_runner') }}" class="nav-link {% if request.endpoint == 'main.earnings_runner' %}active{% endif %}">
+                            <i class="fas fa-money-bill-wave nav-icon"></i>
+                            <span class="nav-text">Earnings</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.wallet') }}" class="nav-link {% if request.endpoint == 'main.wallet' %}active{% endif %}">
+                            <i class="fas fa-wallet nav-icon"></i>
+                            <span class="nav-text">My Wallet</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if user_role == 'admin' %}
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.admin_users') }}" class="nav-link {% if request.endpoint == 'main.admin_users' %}active{% endif %}">
+                            <i class="fas fa-users nav-icon"></i>
+                            <span class="nav-text">User Management</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.admin_errands') }}" class="nav-link {% if request.endpoint == 'main.admin_errands' %}active{% endif %}">
+                            <i class="fas fa-tasks nav-icon"></i>
+                            <span class="nav-text">Errand Management</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.admin_system_config') }}" class="nav-link {% if request.endpoint == 'main.admin_system_config' %}active{% endif %}">
+                            <i class="fas fa-cog nav-icon"></i>
+                            <span class="nav-text">System Config</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.admin_reports') }}" class="nav-link {% if request.endpoint == 'main.admin_reports' %}active{% endif %}">
+                            <i class="fas fa-chart-bar nav-icon"></i>
+                            <span class="nav-text">Reports</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.admin_verification_requests') }}" class="nav-link {% if request.endpoint == 'main.admin_verification_requests' %}active{% endif %}">
+                            <i class="fas fa-user-check nav-icon"></i>
+                            <span class="nav-text">Verification</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('main.admin_wallet_management') }}" class="nav-link {% if request.endpoint == 'main.admin_wallet_management' %}active{% endif %}">
+                            <i class="fas fa-wallet nav-icon"></i>
+                            <span class="nav-text">Wallet Management</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                </div>
+            </nav>
+
+            <!-- Sidebar Footer with Settings and Logout -->
+            <div class="sidebar-footer">
+                <ul class="footer-nav-items">
+                    <li class="footer-nav-item">
+                        <a href="{{ url_for('main.profile') }}" class="footer-nav-link {% if request.endpoint == 'main.profile' %}active{% endif %}">
+                            <i class="fas fa-user footer-nav-icon"></i>
+                            <span class="footer-nav-text">Profile</span>
+                        </a>
+                    </li>
+                    <li class="footer-nav-item">
+                        <a href="{{ url_for('main.logout') }}" class="footer-nav-link">
+                            <i class="fas fa-sign-out-alt footer-nav-icon"></i>
+                            <span class="footer-nav-text">Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content {% if session.get('sidebar_collapsed') %}expanded{% endif %}" id="mainContent">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <button class="sidebar-toggle" id="sidebarToggle">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <h1 class="header-title">{% block header_title %}{% endblock %}</h1>
+                    </div>
+                    <div class="header-actions">
+                        <span class="user-welcome">Welcome, {{ session.get('username') }}</span>
+                        <!-- Notification Bell -->
+                        <a href="{{ url_for('main.notifications') }}" class="notification-bell">
+                            <i class="fas fa-bell"></i>
+                            {% if unread_notification_count > 0 %}
+                            <span class="notification-badge">{{ unread_notification_count }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                </div>
+            </header>
+    {% endif %}
+
+    <!-- Main Content Area -->
+    <main class="main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if request.endpoint not in ['main.index', 'main.login', 'main.register', 'main.forgot_password'] %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if request.endpoint not in ['main.index', 'main.login', 'main.register', 'main.forgot_password'] %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const mainContent = document.getElementById('mainContent');
+
+            // Flag to prevent multiple rapid toggles
+            let isToggling = false;
+
+            function toggleSidebar() {
+                if (isToggling) return;
+                isToggling = true;
+
+                if (window.innerWidth > 768) {
+                    // Desktop: toggle collapsed state
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                    sessionStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                } else {
+                    // Mobile: toggle visibility
+                    sidebar.classList.toggle('mobile-open');
+                    sidebarOverlay.classList.toggle('active');
+                    sidebarToggle.querySelector('i').className = sidebar.classList.contains('mobile-open') ? 'fas fa-times' : 'fas fa-bars';
+                }
+
+                // Reset flag after a short delay
+                setTimeout(() => {
+                    isToggling = false;
+                }, 50);
+            }
+
+            function initializeSidebar() {
+                if (window.innerWidth > 768) {
+                    const isCollapsed = sessionStorage.getItem('sidebarCollapsed') === 'true';
+                    if (isCollapsed) {
+                        sidebar.classList.add('collapsed');
+                        mainContent.classList.add('expanded');
+                    }
+                }
+            }
+
+            // Toggle button click handler
+            sidebarToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleSidebar();
+            });
+
+            // Overlay click handler (mobile only)
+            sidebarOverlay.addEventListener('click', function(e) {
+                if (window.innerWidth <= 768) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleSidebar();
+                }
+            });
+
+            // Prevent sidebar links from triggering any toggle behavior
+            document.querySelectorAll('.nav-link, .footer-nav-link').forEach(link => {
+                // Stop all click event propagation
+                link.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    // For mobile, close sidebar when link is clicked
+                    if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
+                        sidebar.classList.remove('mobile-open');
+                        sidebarOverlay.classList.remove('active');
+                        sidebarToggle.querySelector('i').className = 'fas fa-bars';
+                    }
+                });
+
+                // Also prevent mousedown and mouseup events
+                link.addEventListener('mousedown', function(e) {
+                    e.stopPropagation();
+                });
+                
+                link.addEventListener('mouseup', function(e) {
+                    e.stopPropagation();
+                });
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    // Desktop: reset mobile state
+                    sidebar.classList.remove('mobile-open');
+                    sidebarOverlay.classList.remove('active');
+                    sidebarToggle.querySelector('i').className = 'fas fa-bars';
+                    initializeSidebar();
+                } else {
+                    // Mobile: reset desktop state
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('expanded');
+                }
+            });
+
+            // Initialize sidebar state
+            initializeSidebar();
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,477 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile Settings{% endblock %}
+{% block header_title %}Profile Settings{% endblock %}
+
+{% block content %}
+<style>
+    .profile-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        padding: 2rem;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 2rem;
+    }
+
+    .profile-info {
+        flex: 1;
+    }
+
+    .profile-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .profile-meta {
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding: 2rem;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--primary);
+    }
+
+    .stats-grid-profile {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .stat-item-profile {
+        text-align: center;
+        padding: 1.5rem;
+        background: var(--background);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+    }
+
+    .stat-value-profile {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label-profile {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .input-group {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+    }
+
+    .form-control.with-icon {
+        padding-left: 2.5rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .verification-status-card {
+        background: linear-gradient(135deg, rgba(248, 249, 250, 0.5) 0%, rgba(233, 222, 209, 0.15) 100%);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border);
+        position: relative;
+    }
+
+    .verification-status-card:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--primary), var(--accent));
+        border-radius: 3px 0 0 3px;
+    }
+
+    .status-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: center;
+    }
+
+    .status-approved .status-icon {
+        color: var(--success);
+    }
+
+    .status-pending .status-icon {
+        color: var(--warning);
+    }
+
+    .status-rejected .status-icon {
+        color: var(--error);
+    }
+
+    .status-not-requested .status-icon {
+        color: var(--text-muted);
+    }
+
+    .status-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+
+    .status-description {
+        color: var(--text-secondary);
+        text-align: center;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .verification-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .profile-header {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid-profile {
+            grid-template-columns: 1fr;
+        }
+        
+        .verification-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {{ user.username[0]|upper }}
+        </div>
+        <div class="profile-info">
+            <div class="profile-name">
+                {{ user.first_name or '' }} {{ user.last_name or '' }}
+            </div>
+            <div class="profile-meta">
+                @{{ user.username }} • {{ user.role|title }} • {{ user.barangay }}
+            </div>
+            <div class="profile-badges">
+                <span class="badge badge-primary">Member since {{ user.created_at.strftime('%b %Y') }}</span>
+                <span class="badge badge-success">Active</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2" style="gap: 2rem;">
+        <!-- Personal Information -->
+        <div class="form-section">
+            <h3 class="section-title">Personal Information</h3>
+            <form method="post">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">First Name</label>
+                        <input type="text" name="first_name" class="form-control" value="{{ user.first_name or '' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" name="last_name" class="form-control" value="{{ user.last_name or '' }}" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                        <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">
+                            Username cannot be changed
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" name="email" class="form-control" value="{{ user.email or '' }}" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <div class="input-group">
+                            <i class="input-icon fas fa-phone"></i>
+                            <input type="tel" name="phone" class="form-control with-icon" value="{{ user.phone or '' }}" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Barangay</label>
+                        <select name="barangay" class="form-control" required>
+                            <option value="">Select your barangay</option>
+                            {% for barangay in barangays %}
+                            <option value="{{ barangay }}" {% if user.barangay == barangay %}selected{% endif %}>{{ barangay }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <textarea name="address" class="form-control" rows="3" placeholder="Your complete address">{{ user.address or '' }}</textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-save mr-2"></i>
+                        Update Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Account Settings -->
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <!-- Change Password -->
+            <div class="form-section">
+                <h3 class="section-title">Change Password</h3>
+                <form method="post" action="{{ url_for('main.change_password') }}" id="changePasswordForm">
+                    <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <div class="input-group">
+                            <i class="input-icon fas fa-lock"></i>
+                            <input type="password" name="current_password" id="current_password" class="form-control with-icon" required>
+                        </div>
+                        <small class="error-message" id="currentPasswordError" style="display: none; color: var(--error); font-size: 0.875rem;"></small>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">New Password</label>
+                            <div class="input-group">
+                                <i class="input-icon fas fa-lock"></i>
+                                <input type="password" name="new_password" id="new_password" class="form-control with-icon" required minlength="6">
+                            </div>
+                            <small class="error-message" id="newPasswordError" style="display: none; color: var(--error); font-size: 0.875rem;"></small>
+                            <small class="form-text text-muted" style="display: block; margin-top: 0.25rem; font-size: 0.8rem;">
+                                Password must be at least 6 characters long.
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Confirm New Password</label>
+                            <div class="input-group">
+                                <i class="input-icon fas fa-lock"></i>
+                                <input type="password" name="confirm_password" id="confirm_password" class="form-control with-icon" required minlength="6">
+                            </div>
+                            <small class="error-message" id="confirmPasswordError" style="display: none; color: var(--error); font-size: 0.875rem;"></small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-warning" id="passwordSubmitBtn" style="flex: 1;">
+                            <i class="fas fa-key mr-2"></i>
+                            Change Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Verification Status Section -->
+            {% if user.role != 'admin' %}
+            <div class="form-section">
+                <h3 class="section-title">Account Verification</h3>
+                
+                <div class="verification-status-card 
+                    {% if user.verification_status == 'approved' %}status-approved
+                    {% elif user.verification_status == 'pending' %}status-pending
+                    {% elif user.verification_status == 'rejected' %}status-rejected
+                    {% else %}status-not-requested{% endif %}">
+                    
+                    <div class="status-icon">
+                        {% if user.verification_status == 'approved' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif user.verification_status == 'pending' %}
+                            <i class="fas fa-clock"></i>
+                        {% elif user.verification_status == 'rejected' %}
+                            <i class="fas fa-times-circle"></i>
+                        {% else %}
+                            <i class="fas fa-id-card"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="status-title">
+                        {% if user.verification_status == 'approved' %}
+                            Account Verified
+                        {% elif user.verification_status == 'pending' %}
+                            Verification Under Review
+                        {% elif user.verification_status == 'rejected' %}
+                            Verification Rejected
+                        {% else %}
+                            Account Not Verified
+                        {% endif %}
+                    </div>
+                    
+                    <div class="status-description">
+                        {% if user.verification_status == 'approved' %}
+                            Your account has been verified. You can post errands and access all features.
+                        {% elif user.verification_status == 'pending' %}
+                            Your verification request is being reviewed. You'll be notified once it's processed.
+                        {% elif user.verification_status == 'rejected' %}
+                            Your verification request was rejected. You can submit a new request with corrected documents.
+                        {% else %}
+                            Verify your account to start posting errands and access all features.
+                        {% endif %}
+                        
+                        {% if user.verification_status == 'rejected' and user.bio and 'Previous verification rejected' in user.bio %}
+                            <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(245, 101, 101, 0.05); border-radius: 6px; border-left: 3px solid var(--error);">
+                                <small style="color: var(--error); font-weight: 600; display: block; margin-bottom: 0.25rem;">
+                                    <i class="fas fa-info-circle"></i> Previous Rejection Reason:
+                                </small>
+                                <small style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.3;">
+                                    {{ user.bio.split('Reason: ')[1].split('\n\n')[0] if 'Reason:' in user.bio else 'No specific reason provided.' }}
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="verification-actions">
+                        {% if user.verification_status == 'approved' %}
+                            <div style="text-align: center; color: var(--success); font-weight: 600;">
+                                <i class="fas fa-check mr-2"></i>All features unlocked
+                            </div>
+                        {% elif user.verification_status == 'pending' %}
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-warning">
+                                <i class="fas fa-clock mr-2"></i>
+                                Check Status
+                            </a>
+                        {% elif user.verification_status == 'rejected' %}
+                            <a href="{{ url_for('main.verification') }}" class="btn btn-primary">
+                                <i class="fas fa-redo mr-2"></i>
+                                Reapply for Verification
+                            </a>
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-home mr-2"></i>
+                                Return to Dashboard
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('main.verification') }}" class="btn btn-primary">
+                                <i class="fas fa-shield-alt mr-2"></i>
+                                Verify Account
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Account Statistics -->
+            <div class="form-section">
+                <h3 class="section-title">Account Statistics</h3>
+                <div class="stats-grid-profile">
+                    <!-- First Stat: User Role -->
+                    <div class="stat-item-profile">
+                        <div class="stat-value-profile">{{ user.role|title }}</div>
+                        <div class="stat-label-profile">Account Role</div>
+                    </div>
+                    
+                    <!-- Second Stat: Verification Status or Join Date -->
+                    <div class="stat-item-profile">
+                        {% if user.role == 'admin' %}
+                            <div class="stat-value-profile">Admin</div>
+                            <div class="stat-label-profile">Account Type</div>
+                        {% else %}
+                            <div class="stat-value-profile">
+                                {% if user.verification_status == 'approved' %}
+                                    <span style="color: var(--success);">Verified</span>
+                                {% elif user.verification_status == 'pending' %}
+                                    <span style="color: var(--warning);">Pending</span>
+                                {% elif user.verification_status == 'rejected' %}
+                                    <span style="color: var(--error);">Rejected</span>
+                                {% else %}
+                                    <span style="color: var(--text-muted);">Not Verified</span>
+                                {% endif %}
+                            </div>
+                            <div class="stat-label-profile">Verification</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="color: var(--text-muted);">Account Status</span>
+                        <span class="badge badge-success">Active</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text-muted);">Member Since</span>
+                        <span class="badge badge-secondary">{{ user.created_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+[file content end]

@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+
+{% block title %}View User - Admin{% endblock %}
+{% block header_title %}View User Details{% endblock %}
+
+{% block content %}
+<style>
+    .user-profile-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+    }
+
+    .user-avatar-large {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #ff9800);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 2.5rem;
+        margin: 0 auto 1rem;
+        border: 4px solid white;
+        box-shadow: var(--shadow-md);
+    }
+
+    .user-name-large {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .user-username-large {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-body {
+        padding: 2rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .info-section {
+        background: var(--background);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-item {
+        margin-bottom: 1rem;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .info-value {
+        color: var(--text-primary);
+        font-size: 1rem;
+    }
+
+    .status-badges {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .badge-role {
+        background: var(--primary);
+        color: white;
+    }
+
+    .badge-verified {
+        background: var(--success);
+        color: white;
+    }
+
+    .badge-suspended {
+        background: var(--error);
+        color: white;
+    }
+
+    .badge-active {
+        background: var(--success);
+        color: white;
+    }
+
+    .badge-pending {
+        background: var(--warning);
+        color: white;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+
+    .empty-field {
+        color: var(--text-muted);
+        font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-buttons .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="container">
+    <a href="{{ url_for('main.admin_users') }}" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to User Management
+    </a>
+
+    <div class="user-profile-card">
+        <div class="profile-header">
+            <div class="user-avatar-large">
+                {{ user.username[0]|upper }}
+            </div>
+            <h1 class="user-name-large">
+                {{ user.first_name or 'N/A' }} {{ user.last_name or 'N/A' }}
+            </h1>
+            <p class="user-username-large">@{{ user.username }}</p>
+            
+            <div class="status-badges">
+                <span class="badge badge-role">{{ user.role|title }}</span>
+                {% if user.verified %}
+                    <span class="badge badge-verified">Verified</span>
+                {% else %}
+                    <span class="badge badge-pending">Not Verified</span>
+                {% endif %}
+                {% if user.is_active %}
+                    <span class="badge badge-active">Active</span>
+                {% else %}
+                    <span class="badge badge-suspended">Suspended</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="profile-body">
+            <div class="info-grid">
+                <!-- Personal Information -->
+                <div class="info-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-user-circle"></i> Personal Information
+                    </h3>
+                    <div class="info-item">
+                        <div class="info-label">Full Name</div>
+                        <div class="info-value">{{ user.first_name or 'N/A' }} {{ user.last_name or 'N/A' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Email Address</div>
+                        <div class="info-value">{{ user.email }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Phone Number</div>
+                        <div class="info-value">{{ user.phone or 'Not provided' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Barangay</div>
+                        <div class="info-value">{{ user.barangay or 'Not provided' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Address</div>
+                        <div class="info-value">{{ user.address or 'Not provided' }}</div>
+                    </div>
+                </div>
+
+                <!-- Account Information -->
+                <div class="info-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-cog"></i> Account Information
+                    </h3>
+                    <div class="info-item">
+                        <div class="info-label">User ID</div>
+                        <div class="info-value">#{{ user.id }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Username</div>
+                        <div class="info-value">@{{ user.username }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Account Created</div>
+                        <div class="info-value">{{ user.created_at.strftime('%B %d, %Y at %I:%M %p') }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Verification Status</div>
+                        <div class="info-value">
+                            {% if user.verified %}
+                                <span class="badge badge-verified">Verified</span>
+                            {% elif user.verification_status == 'pending' %}
+                                <span class="badge badge-pending">Pending Review</span>
+                            {% elif user.verification_status == 'rejected' %}
+                                <span class="badge badge-suspended">Rejected</span>
+                            {% else %}
+                                <span class="badge badge-pending">Not Requested</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="info-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-info-circle"></i> Additional Information
+                    </h3>
+                    {% if user.role == 'runner' %}
+                        <div class="info-item">
+                            <div class="info-label">Vehicle Type</div>
+                            <div class="info-value">{{ user.vehicle_type or 'Not specified' }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Available Hours</div>
+                            <div class="info-value">{{ user.available_hours or 'Not specified' }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Bio</div>
+                            <div class="info-value">{{ user.bio or 'No bio provided' }}</div>
+                        </div>
+                    {% endif %}
+           
+                    {% if user.suspended_at %}
+                        <div class="info-item">
+                            <div class="info-label">Suspended On</div>
+                            <div class="info-value">{{ user.suspended_at.strftime('%B %d, %Y at %I:%M %p') }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <a href="{{ url_for('main.edit_user', user_id=user.id) }}" class="btn btn-accent">
+                    <i class="fas fa-edit"></i> Edit User
+                </a>
+                {% if user.role != 'admin' %}
+                    {% if user.is_active %}
+                        <a href="#" class="btn btn-suspend" onclick="showSuspendModal('{{ user.id }}', '{{ user.username }}', '{{ user.first_name }} {{ user.last_name }}')">
+                            <i class="fas fa-user-slash"></i> Suspend User
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('main.admin_unsuspend_user', user_id=user.id) }}" class="btn btn-unsuspend" onclick="return confirm('Unsuspend {{ user.username }}?')">
+                            <i class="fas fa-user-check"></i> Unsuspend User
+                        </a>
+                    {% endif %}
+                {% endif %}
+                <a href="{{ url_for('main.admin_users') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+
+{% block title %}My Wallet{% endblock %}
+{% block header_title %}My Wallet{% endblock %}
+
+{% block content %}
+<style>
+    .wallet-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .verification-alert {
+        background: linear-gradient(135deg, var(--warning-light), var(--warning-lighter));
+        border: 1px solid var(--warning);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .alert-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .alert-icon {
+        font-size: 1.5rem;
+        color: var(--warning);
+    }
+    
+    .alert-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--warning-dark);
+        margin: 0;
+    }
+    
+    .alert-content {
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+    
+    .wallet-balance-card {
+        background: linear-gradient(135deg, var(--surface), var(--background));
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .balance-label {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .balance-amount {
+        font-size: 3rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+    
+    .balance-subtext {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .feature-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .feature-icon {
+        width: 50px;
+        height: 50px;
+        background: var(--primary-light);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: var(--primary);
+        font-size: 1.25rem;
+    }
+    
+    .feature-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+    
+    .feature-description {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    @media (max-width: 768px) {
+        .wallet-balance-card {
+            padding: 1.5rem;
+        }
+        
+        .balance-amount {
+            font-size: 2.5rem;
+        }
+        
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-buttons .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="wallet-container">
+    <!-- Verification Alert -->
+    <div class="verification-alert">
+        <div class="alert-header">
+            <div class="alert-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div>
+                <h3 class="alert-title">Account Verification Required</h3>
+            </div>
+        </div>
+        <div class="alert-content">
+            <p>You need to verify your account to access full wallet features including withdrawals.</p>
+            <p>Once verified, you'll be able to:</p>
+            <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
+                <li>Withdraw your earnings</li>
+                <li>Add payment methods</li>
+                <li>View detailed transaction history</li>
+                <li>Receive payments from completed errands</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Wallet Balance -->
+    <div class="wallet-balance-card">
+        <div class="balance-label">Current Balance</div>
+        <div class="balance-amount">₱{{ "%.2f"|format(wallet.balance) }}</div>
+        <div class="balance-subtext">
+            <i class="fas fa-info-circle"></i>
+            Balance will update automatically when you complete errands
+        </div>
+    </div>
+    
+    <!-- Feature Cards -->
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h4 class="feature-title">Secure Funds</h4>
+            <p class="feature-description">
+                Your earnings are stored securely and will be available for withdrawal once your account is verified.
+            </p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <h4 class="feature-title">Quick Withdrawals</h4>
+            <p class="feature-description">
+                After verification, withdraw to GCash, PayMaya, or bank account within 24-48 hours.
+            </p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h4 class="feature-title">Track Earnings</h4>
+            <p class="feature-description">
+                View detailed transaction history and earnings reports to track your progress.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        {% if user.verification_status == 'pending' %}
+            <button class="btn btn-secondary" disabled>
+                <i class="fas fa-clock"></i> Verification Pending
+            </button>
+            <p style="text-align: center; color: var(--text-secondary); width: 100%; margin-top: 1rem;">
+                Your verification is under review. You'll be notified once approved.
+            </p>
+        {% elif user.verification_status == 'rejected' %}
+            <a href="{{ url_for('main.verification') }}" class="btn btn-primary">
+                <i class="fas fa-redo"></i> Re-submit Verification
+            </a>
+            <p style="text-align: center; color: var(--text-secondary); width: 100%; margin-top: 1rem;">
+                Your previous verification was rejected. Please submit a new request.
+            </p>
+        {% else %}
+            <a href="{{ url_for('main.verification') }}" class="btn btn-primary">
+                <i class="fas fa-shield-alt"></i> Start Verification
+            </a>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        {% endif %}
+    </div>
+    
+    <!-- Limited Transaction History -->
+    {% if wallet.balance > 0 %}
+    <div class="card" style="margin-top: 2rem;">
+        <div class="card-header">
+            <h3 class="card-title">Recent Activity</h3>
+        </div>
+        <div class="card-body">
+            <div class="empty-state" style="text-align: center; padding: 2rem;">
+                <div class="empty-state-icon" style="font-size: 3rem; color: var(--text-muted);">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h4 style="margin: 1rem 0; color: var(--text-secondary);">Transaction History Locked</h4>
+                <p style="color: var(--text-muted);">
+                    Complete verification to view your full transaction history and withdraw your balance of ₱{{ "%.2f"|format(wallet.balance) }}.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

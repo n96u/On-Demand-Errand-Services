@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications{% endblock %}
+{% block header_title %}Notifications{% endblock %}
+
+{% block content %}
+<style>
+    .auth-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .auth-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .auth-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .auth-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .auth-form {
+        padding: 0;
+    }
+
+    .notification-list {
+        list-style: none;
+    }
+
+    .notification-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        transition: var(--transition);
+    }
+
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+
+    .notification-item:hover {
+        background: var(--background);
+    }
+
+    .notification-item.unread {
+        background: var(--primary-light);
+        border-left: 4px solid var(--primary);
+    }
+
+    .notification-content {
+        flex: 1;
+    }
+
+    .notification-message {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        color: var(--text-primary);
+    }
+
+    .notification-time {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .empty-notifications {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-muted);
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .notification-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .action-buttons {
+            align-self: flex-end;
+        }
+        
+        .auth-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+        
+        .header-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .header-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Notifications</h2>
+            <div class="header-actions">
+                {% if unread_notification_count > 0 %}
+                <span class="notification-badge">{{ unread_notification_count }}</span>
+                    {{ unread_notification_count }} unread
+                </span>
+                {% endif %}
+                {% if notifications %}
+                <a href="{{ url_for('main.mark_all_read') }}" class="btn btn-secondary btn-sm">
+                    Mark All Read
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="auth-form">
+            {% if notifications %}
+            <div class="notification-list">
+                {% for notification in notifications %}
+                <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                    <div class="notification-content">
+                        <div class="notification-message">{{ notification.message }}</div>
+                        <div class="notification-time">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                    </div>
+                    <div class="action-buttons">
+                        {% if not notification.is_read %}
+                        <a href="{{ url_for('main.mark_notification_read', notification_id=notification.id) }}" class="btn btn-success btn-sm">Mark Read</a>
+                        {% else %}
+                        <span class="badge badge-success">Read</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-notifications">
+                <div class="empty-icon">
+                    <i class="fas fa-bell-slash"></i>
+                </div>
+                <h3 style="margin-bottom: 0.5rem; color: var(--text-secondary);">No Notifications</h3>
+                <p>You're all caught up! New notifications will appear here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

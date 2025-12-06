@@ -1,0 +1,982 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify User - Admin{% endblock %}
+{% block header_title %}Verify User - {{ user.username }}{% endblock %}
+
+{% block content %}
+<style>
+    .verification-container {
+        max-width: 1400px;
+        margin: 1.5rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .verification-card {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .verification-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        color: white;
+        padding: 1.75rem 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .verification-header:before {
+        content: '';
+        position: absolute;
+        top: -30%;
+        right: -30%;
+        width: 200px;
+        height: 200px;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 60%);
+        border-radius: 50%;
+        z-index: 1;
+    }
+
+    .verification-header h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        position: relative;
+        z-index: 2;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .verification-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 1rem;
+        position: relative;
+        z-index: 2;
+        max-width: 900px;
+        line-height: 1.5;
+    }
+
+    .verification-content {
+        padding: 2rem;
+    }
+
+    .user-info-section {
+        background: linear-gradient(135deg, rgba(248, 249, 250, 0.5) 0%, rgba(233, 222, 209, 0.15) 100%);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+        position: relative;
+    }
+
+    .user-info-section:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--primary), var(--accent));
+        border-radius: 3px 0 0 3px;
+    }
+
+    .user-info-header {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .user-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 2rem;
+        box-shadow: var(--shadow-md);
+        position: relative;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .user-avatar-large:after {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.15) 100%);
+        border-radius: 50%;
+        z-index: 0;
+    }
+
+    .user-avatar-large span {
+        position: relative;
+        z-index: 1;
+    }
+
+    .user-details {
+        flex: 1;
+    }
+
+    .user-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .user-username {
+        font-size: 1rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        background: var(--surface);
+        padding: 0.2rem 0.75rem;
+        border-radius: 15px;
+        border: 1px solid var(--border);
+    }
+
+    .user-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem;
+        background: var(--surface);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        transition: all 0.2s ease;
+    }
+
+    .meta-item:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+        border-color: var(--primary-light);
+    }
+
+    .meta-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, var(--primary-light), var(--background));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        flex-shrink: 0;
+        font-size: 1rem;
+    }
+
+    .meta-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .meta-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-bottom: 0.2rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .meta-value {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        background: linear-gradient(135deg, var(--warning), #ED8936);
+        color: white;
+        box-shadow: var(--shadow-sm);
+        margin-top: 0.5rem;
+    }
+
+    .documents-section {
+        margin: 2.5rem 0;
+    }
+
+    .section-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: var(--text-primary);
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--primary-light);
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .section-title i {
+        color: var(--primary);
+        font-size: 1.2rem;
+    }
+
+    .section-title:after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        border-radius: 1px;
+    }
+
+    .section-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+        max-width: 1000px;
+        line-height: 1.5;
+    }
+
+    .documents-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.25rem;
+        margin-top: 1rem;
+    }
+
+    .document-card {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .document-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+    }
+
+    .document-card:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+
+    .document-icon {
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .document-name {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+        color: var(--text-primary);
+        min-height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1.3;
+    }
+
+    .document-details {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+        line-height: 1.4;
+        flex-grow: 1;
+        overflow: hidden;
+    }
+
+    .document-details strong {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.25rem;
+    }
+
+    .document-details small {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .document-status {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 15px;
+        display: inline-block;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        margin-top: auto;
+    }
+
+    .status-required {
+        background: linear-gradient(135deg, rgba(72, 187, 120, 0.1), rgba(72, 187, 120, 0.15));
+        color: var(--success);
+        border: 1px solid rgba(72, 187, 120, 0.2);
+    }
+
+    .status-recommended {
+        background: linear-gradient(135deg, rgba(237, 137, 54, 0.1), rgba(237, 137, 54, 0.15));
+        color: var(--warning);
+        border: 1px solid rgba(237, 137, 54, 0.2);
+    }
+
+    .no-documents-message {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(248, 249, 250, 0.5) 0%, rgba(233, 222, 209, 0.15) 100%);
+        border-radius: 10px;
+        border: 2px dashed var(--border);
+    }
+
+    .no-documents-message i {
+        font-size: 3rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+
+    .no-documents-message h4 {
+        color: var(--text-primary);
+        margin-bottom: 0.75rem;
+        font-size: 1.25rem;
+    }
+
+    .no-documents-message p {
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.5;
+        font-size: 0.95rem;
+    }
+
+    .verification-actions {
+        background: linear-gradient(135deg, rgba(248, 249, 250, 0.5) 0%, rgba(233, 222, 209, 0.15) 100%);
+        border-radius: 10px;
+        padding: 1.75rem;
+        margin-top: 2.5rem;
+        border: 1px solid var(--border);
+    }
+
+    .action-title {
+        font-size: 1.25rem;
+        margin-bottom: 1.25rem;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .action-title i {
+        color: var(--primary);
+        font-size: 1.1rem;
+    }
+
+    .action-instructions {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        max-width: 900px;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .warning-message {
+        background: linear-gradient(135deg, rgba(237, 137, 54, 0.08) 0%, rgba(237, 137, 54, 0.05) 100%);
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid var(--warning);
+        margin-bottom: 1.5rem;
+    }
+
+    .warning-message h5 {
+        color: var(--warning);
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .warning-message p {
+        color: var(--text-secondary);
+        margin: 0;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-approve {
+        background: linear-gradient(135deg, var(--success), #38A169);
+        color: white;
+        border: none;
+        flex: 1;
+        min-width: 200px;
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-approve:hover {
+        background: linear-gradient(135deg, #38A169, #2F855A);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
+    }
+
+    .btn-reject {
+        background: linear-gradient(135deg, var(--warning), #DD6B20);
+        color: white;
+        border: none;
+        min-width: 200px;
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-reject:hover {
+        background: linear-gradient(135deg, #DD6B20, #C05621);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(237, 137, 54, 0.3);
+    }
+
+    .btn-back {
+        background: var(--surface);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        min-width: 150px;
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+        background: var(--background);
+        border-color: var(--primary-light);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .rejection-form {
+        margin-top: 2rem;
+        padding: 1.75rem;
+        background: linear-gradient(135deg, rgba(245, 101, 101, 0.05) 0%, rgba(237, 137, 54, 0.05) 100%);
+        border-radius: 10px;
+        border: 2px solid var(--warning);
+        animation: slideDown 0.2s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .rejection-form h4 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .rejection-form h4 i {
+        color: var(--warning);
+        font-size: 1.2rem;
+    }
+
+    .rejection-instructions {
+        color: var(--text-secondary);
+        margin-bottom: 1.25rem;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        max-width: 900px;
+    }
+
+    .rejection-reason {
+        width: 100%;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        resize: vertical;
+        min-height: 120px;
+        background: var(--surface);
+        color: var(--text-primary);
+        transition: all 0.2s;
+        line-height: 1.5;
+    }
+
+    .rejection-reason:focus {
+        outline: none;
+        border-color: var(--warning);
+        box-shadow: 0 0 0 3px rgba(237, 137, 54, 0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .btn-confirm-reject {
+        background: linear-gradient(135deg, var(--error), #E53E3E);
+        color: white;
+        border: none;
+        flex: 1;
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-confirm-reject:hover {
+        background: linear-gradient(135deg, #E53E3E, #C53030);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 101, 101, 0.3);
+    }
+
+    @media (max-width: 1200px) {
+        .verification-container {
+            max-width: 95%;
+        }
+        
+        .documents-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .verification-container {
+            margin: 1rem auto;
+            padding: 0 1rem;
+        }
+        
+        .verification-content {
+            padding: 1.5rem;
+        }
+        
+        .verification-header {
+            padding: 1.5rem;
+        }
+        
+        .verification-header h2 {
+            font-size: 1.5rem;
+        }
+        
+        .user-info-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar-large {
+            width: 70px;
+            height: 70px;
+            font-size: 1.75rem;
+        }
+        
+        .user-name {
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: center;
+        }
+        
+        .user-meta-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        
+        .documents-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn-approve, .btn-reject, .btn-back {
+            min-width: 100%;
+            justify-content: center;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .meta-item {
+            padding: 0.75rem;
+        }
+        
+        .verification-actions {
+            padding: 1.5rem;
+        }
+        
+        .rejection-form {
+            padding: 1.5rem;
+        }
+        
+        .no-documents-message {
+            padding: 1.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .verification-container {
+            padding: 0 0.75rem;
+        }
+        
+        .verification-content {
+            padding: 1.25rem;
+        }
+        
+        .user-info-section {
+            padding: 1.25rem;
+        }
+        
+        .verification-actions {
+            padding: 1.25rem;
+        }
+        
+        .rejection-form {
+            padding: 1.25rem;
+        }
+        
+        .document-card {
+            padding: 1.25rem;
+        }
+        
+        .document-icon {
+            font-size: 1.75rem;
+            height: 45px;
+        }
+        
+        .document-name {
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<div class="verification-container">
+    <div class="verification-card">
+        <div class="verification-header">
+            <h2>Verify User Account</h2>
+            <p>Review user documents and verification information before making a decision</p>
+        </div>
+        
+        <div class="verification-content">
+            <!-- User Information Section -->
+            <div class="user-info-section">
+                <div class="user-info-header">
+                    <div class="user-avatar-large">
+                        <span>{{ user.username[0]|upper }}</span>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">
+                            <span>{{ user.first_name or 'N/A' }} {{ user.last_name or 'N/A' }}</span>
+                            {% if user.first_name or user.last_name %}
+                            <span class="user-username">@{{ user.username }}</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="status-badge">
+                                <i class="fas fa-clock"></i> Pending Review
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="user-meta-grid">
+                    <div class="meta-item">
+                        <div class="meta-icon">
+                            <i class="fas fa-user-tag"></i>
+                        </div>
+                        <div class="meta-content">
+                            <div class="meta-label">Role</div>
+                            <div class="meta-value">{{ user.role|title }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="meta-item">
+                        <div class="meta-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="meta-content">
+                            <div class="meta-label">Email</div>
+                            <div class="meta-value">{{ user.email }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="meta-item">
+                        <div class="meta-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="meta-content">
+                            <div class="meta-label">Phone</div>
+                            <div class="meta-value">{{ user.phone or 'Not provided' }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="meta-item">
+                        <div class="meta-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="meta-content">
+                            <div class="meta-label">Barangay</div>
+                            <div class="meta-value">{{ user.barangay or 'Not specified' }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="meta-item">
+                        <div class="meta-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="meta-content">
+                            <div class="meta-label">Joined</div>
+                            <div class="meta-value">{{ user.created_at.strftime('%b %d, %Y') }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="meta-item">
+                        <div class="meta-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="meta-content">
+                            <div class="meta-label">Status</div>
+                            <div class="meta-value">Pending Review</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Section -->
+            <div class="documents-section">
+                <h3 class="section-title">
+                    <i class="fas fa-file-alt"></i> 
+                    Uploaded Documents
+                </h3>
+                
+                <p class="section-subtitle">
+                    Document submitted by the user for verification. Click on any document to view it.
+                </p>
+                
+                {% if documents %}
+                <div class="documents-grid">
+                    {% for doc in documents %}
+                    <div class="document-card" onclick="viewDocument('{{ user.id }}', '{{ doc.filename }}')">
+                        <div class="document-icon">
+                            {% if 'government' in doc.filename.lower() or 'id' in doc.filename.lower() %}
+                                <i class="fas fa-id-card"></i>
+                            {% elif 'drivers' in doc.filename.lower() or 'license' in doc.filename.lower() %}
+                                <i class="fas fa-id-card-alt"></i>
+                            {% elif 'vehicle' in doc.filename.lower() or 'registration' in doc.filename.lower() %}
+                                <i class="fas fa-car"></i>
+                            {% elif 'insurance' in doc.filename.lower() %}
+                                <i class="fas fa-shield-alt"></i>
+                            {% elif 'proof' in doc.filename.lower() or 'address' in doc.filename.lower() %}
+                                <i class="fas fa-home"></i>
+                            {% else %}
+                                <i class="fas fa-file"></i>
+                            {% endif %}
+                        </div>
+                        <div class="document-name">
+                            {% if 'government' in doc.filename.lower() %}
+                                Government ID
+                            {% elif 'drivers' in doc.filename.lower() %}
+                                Driver's License
+                            {% elif 'vehicle' in doc.filename.lower() %}
+                                Vehicle Registration
+                            {% elif 'proof' in doc.filename.lower() %}
+                                Proof of Address
+                            {% else %}
+                                Verification Document
+                            {% endif %}
+                        </div>
+                        <div class="document-details">
+                            <strong>{{ doc.original_name }}</strong>
+                            <small>
+                                {{ (doc.file_size / 1024)|round|int }} KB
+                            </small>
+                        </div>
+                        <div class="document-status status-required">
+                            Submitted
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-documents-message">
+                    <i class="fas fa-folder-open"></i>
+                    <h4>No Documents Found</h4>
+                    <p>
+                        Could not load documents for this user. The documents may have been moved or deleted.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Verification Actions -->
+            <div class="verification-actions">
+                <div class="action-title">
+                    <i class="fas fa-clipboard-check"></i> Verification Decision
+                </div>
+                
+                {% if documents %}
+                <p class="action-instructions">
+                    Based on your review of the user's submitted documents, select the appropriate action below.
+                </p>
+                {% else %}
+                <div class="warning-message">
+                    <h5><i class="fas fa-exclamation-triangle"></i> No Documents Submitted</h5>
+                    <p>
+                        This user has not submitted any verification documents. Consider rejecting the verification 
+                        request or contacting the user to submit required documents.
+                    </p>
+                </div>
+                {% endif %}
+                
+                <div class="action-buttons">
+                    {% if documents %}
+                    <a href="{{ url_for('main.admin_approve_user', user_id=user.id) }}" class="btn btn-approve">
+                        <i class="fas fa-check-circle"></i> Approve
+                    </a>
+                    {% endif %}
+                    
+                    <button type="button" class="btn btn-reject" onclick="toggleRejectionForm()">
+                        <i class="fas fa-times-circle"></i> Reject
+                    </button>
+                    
+                    <a href="{{ url_for('main.admin_users') }}" class="btn btn-back">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </div>
+            </div>
+
+            <!-- Rejection Form (Hidden by default) -->
+            <div id="rejectionForm" class="rejection-form" style="display: none;">
+                <h4><i class="fas fa-exclamation-triangle"></i> Reject Verification</h4>
+                <p class="rejection-instructions">
+                    Please provide a clear reason for rejecting this verification request. 
+                    The user will receive this feedback and will be asked to resubmit their documents.
+                </p>
+                <form method="POST" action="{{ url_for('main.admin_reject_user', user_id=user.id) }}">
+                    <textarea name="reason" class="rejection-reason" 
+                              placeholder="Please provide specific reasons for rejection. For example: 'The ID document photo is blurry and unreadable. Please upload a clear photo where all text is visible.'" 
+                              required></textarea>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-confirm-reject">
+                            <i class="fas fa-ban"></i> Confirm Rejection
+                        </button>z
+                        <button type="button" class="btn btn-back" onclick="toggleRejectionForm()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewDocument(userId, filename) {
+    // URL encode the filename to handle special characters
+    const encodedFilename = encodeURIComponent(filename);
+    // Open document in new tab
+    const url = `/view-verification-doc/${userId}/${encodedFilename}`;
+    console.log('Opening document:', url);
+    window.open(url, '_blank');
+}
+
+function toggleRejectionForm() {
+    const form = document.getElementById('rejectionForm');
+    const isVisible = form.style.display !== 'none';
+    form.style.display = isVisible ? 'none' : 'block';
+    
+    // Scroll to form if showing
+    if (!isVisible) {
+        setTimeout(() => {
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+    }
+}
+
+// Close rejection form with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const form = document.getElementById('rejectionForm');
+        if (form && form.style.display !== 'none') {
+            form.style.display = 'none';
+        }
+    }
+});
+</script>
+{% endblock %}

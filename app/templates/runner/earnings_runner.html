@@ -1,0 +1,463 @@
+{% extends 'base.html' %}
+
+{% block title %}Earnings{% endblock %}
+{% block header_title %}Earnings Overview{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    /* Minimal Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        text-align: center;
+        transition: var(--transition);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        background: var(--primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    /* Adjusted Earnings Items Spacing */
+    .earnings-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .earning-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        transition: var(--transition);
+    }
+
+    .earning-item:hover {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .earning-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+    }
+
+    .earning-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--primary-light);
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .earning-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .earning-title {
+        font-weight: 600;
+        margin-bottom: 0.375rem;
+        font-size: 1rem;
+        color: var(--text-primary);
+    }
+
+    .earning-meta {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+
+    .earning-amount {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-left: 1rem;
+        flex-shrink: 0;
+    }
+
+    .progress-item {
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--primary);
+        border-radius: 3px;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .metric-card {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        text-align: center;
+        border: 1px solid var(--border);
+    }
+
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-label {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .table-container {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table th,
+    .table td {
+        padding: 1rem 1.25rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .table th {
+        background: var(--background);
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--text-muted);
+        opacity: 0.7;
+    }
+
+    .empty-state-title {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .empty-state-description {
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .metrics-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .earning-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+        
+        .earning-content {
+            width: 100%;
+        }
+        
+        .earning-amount {
+            margin-left: 0;
+            text-align: center;
+            width: 100%;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .earning-item {
+            padding: 1rem;
+        }
+        
+        .earning-content {
+            gap: 0.75rem;
+        }
+        
+        .earning-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+        
+        .stat-card {
+            padding: 1.5rem;
+        }
+        
+        .stat-value {
+            font-size: 1.75rem;
+        }
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1 style="margin: 0; font-size: 1.8rem;">Your Earnings</h1>
+        <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary);">Track your income and completed jobs</p>
+    </div>
+    <div style="text-align: right;">
+        <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">₱{{ "%.2f"|format(total_earnings) }}</div>
+        <div style="font-size: 0.9rem; color: var(--text-muted);">Total Earnings</div>
+    </div>
+</div>
+
+<!-- Minimal Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-wallet"></i>
+        </div>
+        <div class="stat-value">₱{{ "%.2f"|format(total_earnings) }}</div>
+        <div class="stat-label">Total Earnings</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-calendar-week"></i>
+        </div>
+        <div class="stat-value">₱{{ "%.2f"|format(weekly_earnings) }}</div>
+        <div class="stat-label">This Week</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-value">{{ completed_count }}</div>
+        <div class="stat-label">Completed Jobs</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-chart-pie"></i>
+        </div>
+        <div class="stat-value">₱{{ "%.2f"|format(average_earning) }}</div>
+        <div class="stat-label">Average per Job</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-2" style="gap: 2rem;">
+    <!-- Recent Earnings -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Recent Completed Errands</h2>
+        </div>
+        <div class="card-body">
+            {% set completed_errands = accepted_errands|selectattr('status', 'equalto', 'Completed')|list %}
+            {% if completed_errands %}
+                <div class="earnings-list">
+                    {% for errand in completed_errands[:5] %}
+                    <div class="earning-item">
+                        <div class="earning-content">
+                            <div class="earning-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="earning-details">
+                                <div class="earning-title">#{{ errand.id }} - {{ errand.category }}</div>
+                                <div class="earning-meta">{{ errand.user_client.username }} • {{ errand.completed_at.strftime('%b %d, %Y') }}</div>
+                            </div>
+                        </div>
+                        <div class="earning-amount">₱{{ "%.2f"|format(errand.final_fee or errand.proposed_fee) }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Earnings Yet</h3>
+                    <p class="empty-state-description">Your earnings will appear here once you complete errands.</p>
+                    <a href="{{ url_for('main.available_errands_runner') }}" class="btn btn-primary">Find Errands</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Earnings Summary -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Earnings Summary</h2>
+        </div>
+        <div class="card-body">
+            <div class="progress-item">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>This Month</span>
+                    <span style="font-weight: 600;">₱{{ "%.2f"|format(total_earnings * 0.3) }}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 30%"></div>
+                </div>
+            </div>
+
+            <div class="progress-item">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>This Week</span>
+                    <span style="font-weight: 600;">₱{{ "%.2f"|format(weekly_earnings) }}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 60%"></div>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value">{{ completed_count }}</div>
+                    <div class="metric-label">Total Jobs</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">100%</div>
+                    <div class="metric-label">Success Rate</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment History -->
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">
+        <h2 class="card-title">Payment History</h2>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Errand ID</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set completed_errands = accepted_errands|selectattr('status', 'equalto', 'Completed')|list %}
+                    {% for errand in completed_errands %}
+                    <tr>
+                        <td>{{ errand.completed_at.strftime('%Y-%m-%d') if errand.completed_at else errand.updated_at.strftime('%Y-%m-%d') }}</td>
+                        <td>#{{ errand.id }}</td>
+                        <td>{{ errand.category }} for {{ errand.user_client.username }}</td>
+                        <td style="font-weight: 600; color: var(--primary);">₱{{ "%.2f"|format(errand.final_fee or errand.proposed_fee) }}</td>
+                        <td><span class="badge badge-success">Paid</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                            <i class="fas fa-receipt" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No payment history yet</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

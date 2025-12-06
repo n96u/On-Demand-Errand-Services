@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - GrabItDone{% endblock %}
+{% block header_title %}Welcome to GrabItDone{% endblock %}
+
+{% block content %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        color: white;
+        padding: 6rem 2rem;
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        line-height: 1.1;
+    }
+
+    .hero-description {
+        font-size: 1.5rem;
+        opacity: 0.9;
+        margin-bottom: 2.5rem;
+        line-height: 1.6;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .about-section {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+
+    .section {
+        padding: 4rem 0;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .section-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+
+    .section-description {
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-top: 3rem;
+    }
+
+    .feature-card {
+        text-align: center;
+        padding: 2.5rem 2rem;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        transition: var(--transition);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .feature-icon {
+        width: 80px;
+        height: 80px;
+        background: var(--primary-light);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 2rem;
+        color: var(--primary);
+    }
+
+    .feature-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .feature-description {
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        margin: 3rem 0;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 2rem;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .how-it-works {
+        background: var(--background);
+        border-radius: var(--radius-lg);
+        padding: 3rem;
+        margin: 3rem 0;
+    }
+
+    .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .step {
+        text-align: center;
+    }
+
+    .step-number {
+        width: 50px;
+        height: 50px;
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.25rem;
+        margin: 0 auto 1rem;
+    }
+
+    .step-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .step-description {
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .cta-section {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        color: white;
+        padding: 4rem 2rem;
+        border-radius: var(--radius-lg);
+        text-align: center;
+        margin-top: 4rem;
+    }
+
+    .cta-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .cta-description {
+        font-size: 1.25rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .cta-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+        
+        .hero-description {
+            font-size: 1.25rem;
+        }
+        
+        .section-title {
+            font-size: 2rem;
+        }
+        
+        .hero-actions,
+        .cta-actions {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .hero-actions .btn,
+        .cta-actions .btn {
+            width: 200px;
+        }
+        
+        .how-it-works {
+            padding: 2rem 1rem;
+        }
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="about-section">
+        <h1 class="hero-title">Get Things Done, On Demand</h1>
+        <p class="hero-description">
+            GrabItDone connects you with trusted local runners to handle your errands quickly, 
+            reliably, and affordably. Focus on what matters while we take care of the rest.
+        </p>
+        <div class="hero-actions">
+            <a href="{{ url_for('main.register') }}" class="btn btn-primary btn-lg">Get Started Today</a>
+            <a href="#how-it-works" class="btn btn-secondary btn-lg">Learn How It Works</a>
+        </div>
+    </div>
+</section>
+
+<div class="about-section">
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-number">1,247+</div>
+            <div class="stat-label">Errands Completed</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">356+</div>
+            <div class="stat-label">Active Runners</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">94%</div>
+            <div class="stat-label">Satisfaction Rate</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">15+</div>
+            <div class="stat-label">Barangays Served</div>
+        </div>
+    </div>
+
+    <!-- About Us -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">About GrabItDone</h2>
+            <p class="section-description">
+                We're revolutionizing how people get things done in their communities by creating 
+                a trusted platform that connects those who need help with those who can provide it.
+            </p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <h3 class="feature-title">Fast & Reliable</h3>
+                <p class="feature-description">
+                    Get your errands completed quickly by our network of verified and reliable runners 
+                    in your local area.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="feature-title">Trusted & Secure</h3>
+                <p class="feature-description">
+                    All our runners undergo verification to ensure your safety and peace of mind 
+                    throughout the process.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </div>
+                <h3 class="feature-title">Affordable & Fair</h3>
+                <p class="feature-description">
+                    Transparent pricing with no hidden fees. You set the price that works for your budget.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="section-header">
+            <h2 class="section-title">How GrabItDone Works</h2>
+            <p class="section-description">
+                Simple steps to get your errands done quickly and efficiently
+            </p>
+        </div>
+        
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3 class="step-title">Create Request</h3>
+                <p class="step-description">
+                    Describe your errand, set pickup and drop-off locations, and propose a fair price.
+                </p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3 class="step-title">Find Runner</h3>
+                <p class="step-description">
+                    Our verified runners in your area will see your request and can accept the errand.
+                </p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3 class="step-title">Get It Done</h3>
+                <p class="step-description">
+                    Track progress in real-time and receive notifications when your errand is completed.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- For Runners -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">For Runners</h2>
+            <p class="section-description">
+                Earn extra income by helping your community with flexible work opportunities
+            </p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3 class="feature-title">Flexible Schedule</h3>
+                <p class="feature-description">
+                    Choose errands that fit your schedule and work when it's convenient for you.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <h3 class="feature-title">Earn Extra Income</h3>
+                <p class="feature-description">
+                    Get paid competitive rates for completing errands in your local area.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3 class="feature-title">Build Reputation</h3>
+                <p class="feature-description">
+                    Earn reviews and build your reputation as a trusted runner in the community.
+                </p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="about-section">
+        <h2 class="cta-title">Ready to Get Started?</h2>
+        <p class="cta-description">
+            Join thousands of satisfied users who are getting things done with GrabItDone
+        </p>
+        <div class="cta-actions">
+            <a href="{{ url_for('main.register') }}" class="btn btn-primary btn-lg">Sign Up Now</a>
+            <a href="{{ url_for('main.login') }}" class="btn btn-secondary btn-lg">Login</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

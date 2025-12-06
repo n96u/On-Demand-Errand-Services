@@ -1,0 +1,1045 @@
+{% extends 'base.html' %}
+
+{% block title %}Available Errands{% endblock %}
+{% block header_title %}Available Errands{% endblock %}
+
+{% block content %}
+{% if not user.verified and user.verification_status != 'approved' %}
+<div class="verification-banner">
+    <div class="verification-content">
+        <div class="verification-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div>
+            <h3>Account Verification Required</h3>
+            <p>
+                You need to verify your account before you can accept errands. 
+                {% if user.verification_status == 'pending' %}
+                Your verification request is under review. Please wait for approval.
+                {% elif user.verification_status == 'rejected' %}
+                Your previous verification was rejected. Please submit a new request.
+                {% else %}
+                <a href="{{ url_for('main.verification') }}">Click here to verify your account</a>.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    /* Improved Styling */
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.8rem;
+        margin: 0;
+        color: var(--text-primary);
+    }
+
+    .page-subtitle {
+        color: var(--text-secondary);
+        margin: 0.5rem 0 0 0;
+    }
+
+    /* Control Bar */
+    .control-bar {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 1.25rem;
+        margin-bottom: 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .stats {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stat-value {
+        font-weight: 700;
+        color: var(--primary);
+        font-size: 1.25rem;
+    }
+
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .sort-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .sort-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .sort-label {
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .sort-select {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 0.9rem;
+        cursor: pointer;
+        min-width: 150px;
+    }
+
+    .sort-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.1);
+    }
+
+    .sort-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .sort-button:hover {
+        background: var(--background);
+        color: var(--text-primary);
+    }
+
+    .sort-button.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    .refresh-btn {
+        padding: 0.5rem 1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .refresh-btn:hover {
+        background: var(--background);
+        color: var(--text-primary);
+    }
+
+    /* Filter Tags */
+    .filter-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-tag {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+
+    .filter-tag.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    .filter-tag-remove {
+        background: none;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        padding: 0;
+        font-size: 0.8rem;
+    }
+
+    /* Enhanced Errand Cards */
+    .errand-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .errand-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .errand-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-light);
+    }
+
+    .errand-card.new {
+        border-left: 4px solid var(--primary);
+    }
+
+    .errand-card.high-priority {
+        border-left: 4px solid var(--error);
+    }
+
+    .errand-card-header {
+        padding: 1.25rem 1.5rem 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .errand-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+
+    .errand-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--text-primary);
+        line-height: 1.3;
+    }
+
+    .errand-price {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary);
+        white-space: nowrap;
+        margin-left: 1rem;
+    }
+
+    .errand-category {
+        display: inline-block;
+        background: var(--primary-light);
+        color: var(--primary-dark);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    .errand-description {
+        color: var(--text-secondary);
+        line-height: 1.5;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .errand-details {
+        padding: 1.25rem 1.5rem;
+        display: grid;
+        gap: 0.75rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .detail-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .detail-icon {
+        width: 20px;
+        color: var(--text-muted);
+        text-align: center;
+    }
+
+    .detail-content {
+        flex: 1;
+        font-size: 0.9rem;
+    }
+
+    .detail-label {
+        color: var(--text-muted);
+        margin-right: 0.25rem;
+    }
+
+    .detail-value {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .distance-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: var(--info-light);
+        color: var(--info-dark);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .time-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: var(--warning-light);
+        color: var(--warning-dark);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .errand-meta {
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--background);
+    }
+
+    .client-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .client-avatar {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .client-details {
+        font-size: 0.85rem;
+    }
+
+    .client-name {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .client-rating {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .errand-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: var(--text-muted);
+        opacity: 0.7;
+    }
+
+    .empty-state-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .empty-state-description {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Category Filter */
+    .category-filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .category-btn {
+        padding: 0.5rem 1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .category-btn:hover {
+        background: var(--background);
+        color: var(--text-primary);
+    }
+
+    .category-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .errand-grid {
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .errand-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .control-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+        }
+        
+        .stats {
+            justify-content: space-between;
+        }
+        
+        .sort-controls {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .sort-group {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .sort-select {
+            width: 100%;
+        }
+        
+        .errand-title-row {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .errand-price {
+            margin-left: 0;
+        }
+        
+        .errand-meta {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+        }
+        
+        .errand-actions {
+            width: 100%;
+        }
+        
+        .errand-actions .btn {
+            flex: 1;
+            text-align: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .errand-card {
+            border-radius: var(--radius);
+        }
+        
+        .errand-card-header,
+        .errand-details,
+        .errand-meta {
+            padding: 1rem;
+        }
+    }
+
+    /* Verification Banner */
+    .verification-banner {
+        background: linear-gradient(135deg, var(--warning-light), var(--warning-lighter));
+        border: 1px solid var(--warning);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .verification-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .verification-icon {
+        font-size: 1.5rem;
+        color: var(--warning);
+        flex-shrink: 0;
+    }
+
+    .verification-content h3 {
+        margin: 0 0 0.5rem 0;
+        color: var(--warning-dark);
+        font-size: 1.1rem;
+    }
+
+    .verification-content p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .verification-content a {
+        color: var(--primary);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .verification-content a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Available Errands</h1>
+        <p class="page-subtitle">Find and accept errands in your area</p>
+    </div>
+</div>
+
+<!-- Control Bar with Stats and Sorting -->
+<div class="control-bar">
+    <div class="stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ available_errands|length }}</span>
+            <span class="stat-label">Available</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ categories|length }}</span>
+            <span class="stat-label">Categories</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ barangays|length }}</span>
+            <span class="stat-label">Areas</span>
+        </div>
+    </div>
+
+    <div class="sort-controls">
+        <div class="sort-group">
+            <span class="sort-label">Sort by:</span>
+            <select class="sort-select" id="sortSelect">
+                <option value="recent">Recently Added</option>
+                <option value="price_high">Price: High to Low</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="area">Area</option>
+                <option value="category">Category</option>
+                <option value="distance">Distance</option>
+            </select>
+        </div>
+        
+        <div class="sort-group">
+            <span class="sort-label">Filter:</span>
+            <button class="sort-button" data-filter="all">All</button>
+            <button class="sort-button" data-filter="nearby">Near Me</button>
+            <button class="sort-button" data-filter="urgent">Urgent</button>
+        </div>
+        
+        <button class="refresh-btn" id="refreshBtn">
+            <i class="fas fa-sync-alt"></i>
+            Refresh
+        </button>
+    </div>
+</div>
+
+<!-- Category Filter -->
+<div class="category-filter" id="categoryFilter">
+    <button class="category-btn active" data-category="all">All Categories</button>
+    {% set unique_categories = available_errands|map(attribute='category')|unique|list %}
+    {% for category in unique_categories %}
+    <button class="category-btn" data-category="{{ category }}">{{ category }}</button>
+    {% endfor %}
+</div>
+
+<!-- Active Filters -->
+<div class="filter-tags" id="filterTags">
+    <!-- Will be populated by JavaScript -->
+</div>
+
+<!-- Errand Grid -->
+<div class="errand-grid" id="errandGrid">
+    {% if available_errands %}
+        {% for errand in available_errands %}
+        <div class="errand-card" 
+             data-id="{{ errand.id }}"
+             data-category="{{ errand.category }}"
+             data-barangay="{{ errand.barangay }}"
+             data-price="{{ errand.proposed_fee }}"
+             data-created="{{ errand.created_at.timestamp() }}"
+             data-distance="2">
+            <div class="errand-card-header">
+                <div class="errand-title-row">
+                    <h3 class="errand-title">#{{ errand.id }} - {{ errand.category }}</h3>
+                    <div class="errand-price">₱{{ "%.2f"|format(errand.proposed_fee) }}</div>
+                </div>
+                <span class="errand-category">{{ errand.category }}</span>
+                <p class="errand-description">
+                    {{ errand.description[:120] }}{% if errand.description|length > 120 %}...{% endif %}
+                </p>
+            </div>
+
+            <div class="errand-details">
+                <div class="detail-row">
+                    <div class="detail-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="detail-content">
+                        <span class="detail-label">From:</span>
+                        <span class="detail-value">{{ errand.pickup_address }}</span>
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-icon">
+                        <i class="fas fa-flag-checkered"></i>
+                    </div>
+                    <div class="detail-content">
+                        <span class="detail-label">To:</span>
+                        <span class="detail-value">{{ errand.dropoff_address }}</span>
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-icon">
+                        <i class="fas fa-map"></i>
+                    </div>
+                    <div class="detail-content">
+                        <span class="detail-label">Area:</span>
+                        <span class="detail-value">{{ errand.barangay }}</span>
+                        <span class="distance-badge">
+                            <i class="fas fa-location-arrow"></i>
+                            ~2km away
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="detail-content">
+                        <span class="detail-label">Preferred Time:</span>
+                        <span class="detail-value">{{ errand.preferred_time.strftime('%Y-%m-%d %H:%M') if errand.preferred_time else 'Flexible' }}</span>
+                        {% if errand.preferred_time and errand.preferred_time < now %}
+                        <span class="time-badge">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Urgent
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="errand-meta">
+                <div class="client-info">
+                    <div class="client-avatar">
+                        {{ errand.user_client.username[:1]|upper }}
+                    </div>
+                    <div class="client-details">
+                        <div class="client-name">{{ errand.user_client.username }}</div>
+                    </div>
+                </div>
+
+                <div class="errand-actions">
+                    {% if user.verified or user.verification_status == 'approved' %}
+                        <a href="{{ url_for('main.accept_errand', errand_id=errand.id) }}" 
+                        class="btn btn-primary btn-sm"
+                        onclick="return confirm('Accept this errand? You will earn ₱{{ errand.proposed_fee|round(2) }} upon completion.')">
+                            Accept Errand
+                        </a>
+                    {% else %}
+                        <button class="btn btn-primary btn-sm" disabled title="Verify your account to accept errands">
+                            <i class="fas fa-check-circle"></i> Accept
+                        </button>
+                    {% endif %}
+                    <a href="{{ url_for('main.view_errand', errand_id=errand.id) }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <h3 class="empty-state-title">No Available Errands</h3>
+            <p class="empty-state-description">
+                There are no errands available in your area at the moment. 
+                Check back later or expand your service area in settings.
+            </p>
+            <button class="btn btn-primary" id="refreshListBtn">
+                <i class="fas fa-sync-alt"></i> Refresh List
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const errandGrid = document.getElementById('errandGrid');
+    const errandCards = Array.from(document.querySelectorAll('.errand-card'));
+    const sortSelect = document.getElementById('sortSelect');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const filterButtons = document.querySelectorAll('.sort-button');
+    const filterTags = document.getElementById('filterTags');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const refreshListBtn = document.getElementById('refreshListBtn');
+    
+    let activeFilters = {
+        category: 'all',
+        sort: 'recent',
+        filter: 'all'
+    };
+    
+    // Get barangay for distance calculation (simulated)
+    const userBarangay = "{{ user.barangay }}";
+    
+    // Function to sort errands
+    function sortErrands(cards, sortBy) {
+        switch(sortBy) {
+            case 'recent':
+                return cards.sort((a, b) => {
+                    return parseFloat(b.dataset.created) - parseFloat(a.dataset.created);
+                });
+            case 'price_high':
+                return cards.sort((a, b) => {
+                    return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
+                });
+            case 'price_low':
+                return cards.sort((a, b) => {
+                    return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+                });
+            case 'category':
+                return cards.sort((a, b) => {
+                    return a.dataset.category.localeCompare(b.dataset.category);
+                });
+            case 'area':
+                return cards.sort((a, b) => {
+                    return a.dataset.barangay.localeCompare(b.dataset.barangay);
+                });
+            case 'distance':
+                return cards.sort((a, b) => {
+                    return parseFloat(a.dataset.distance) - parseFloat(b.dataset.distance);
+                });
+            default:
+                return cards;
+        }
+    }
+    
+    // Function to filter errands
+    function filterErrands(cards, filters) {
+        return cards.filter(card => {
+            // Category filter
+            if (filters.category !== 'all' && card.dataset.category !== filters.category) {
+                return false;
+            }
+            
+            // Special filters
+            if (filters.filter === 'nearby') {
+                // Simulate distance filtering (within 5km)
+                if (parseFloat(card.dataset.distance) > 5) {
+                    return false;
+                }
+            }
+            
+            if (filters.filter === 'urgent') {
+                // Check if errand has urgent badge
+                const hasUrgentBadge = card.querySelector('.time-badge');
+                if (!hasUrgentBadge) {
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+    }
+    
+    // Function to update display
+    function updateDisplay() {
+        let visibleCards = errandCards.slice();
+        
+        // Apply filters
+        visibleCards = filterErrands(visibleCards, activeFilters);
+        
+        // Apply sorting
+        visibleCards = sortErrands(visibleCards, activeFilters.sort);
+        
+        // Clear and re-add cards
+        errandGrid.innerHTML = '';
+        visibleCards.forEach(card => {
+            errandGrid.appendChild(card);
+        });
+        
+        // Show empty state if no cards
+        if (visibleCards.length === 0) {
+            errandGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Matching Errands</h3>
+                    <p class="empty-state-description">
+                        No errands match your current filters. Try adjusting your criteria.
+                    </p>
+                    <button class="btn btn-primary" onclick="resetFilters()">
+                        <i class="fas fa-filter"></i> Reset Filters
+                    </button>
+                </div>
+            `;
+        }
+        
+        updateFilterTags();
+        updateStats(visibleCards.length);
+    }
+    
+    // Function to update filter tags
+    function updateFilterTags() {
+        filterTags.innerHTML = '';
+        
+        // Category tag
+        if (activeFilters.category !== 'all') {
+            const tag = document.createElement('div');
+            tag.className = 'filter-tag active';
+            tag.innerHTML = `
+                ${activeFilters.category}
+                <button class="filter-tag-remove" onclick="removeCategoryFilter()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            filterTags.appendChild(tag);
+        }
+        
+        // Filter tag
+        if (activeFilters.filter !== 'all') {
+            const tag = document.createElement('div');
+            tag.className = 'filter-tag active';
+            tag.innerHTML = `
+                ${activeFilters.filter.charAt(0).toUpperCase() + activeFilters.filter.slice(1)}
+                <button class="filter-tag-remove" onclick="removeFilter('${activeFilters.filter}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            filterTags.appendChild(tag);
+        }
+        
+        // Sort tag
+        if (activeFilters.sort !== 'recent') {
+            const sortNames = {
+                'price_high': 'Price: High to Low',
+                'price_low': 'Price: Low to High',
+                'area': 'Area',
+                'category': 'Category',
+                'distance': 'Distance'
+            };
+            
+            const tag = document.createElement('div');
+            tag.className = 'filter-tag';
+            tag.innerHTML = `
+                Sorted by: ${sortNames[activeFilters.sort]}
+                <button class="filter-tag-remove" onclick="removeSortFilter()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            filterTags.appendChild(tag);
+        }
+    }
+    
+    // Function to update stats
+    function updateStats(visibleCount) {
+        const statValue = document.querySelector('.stat-value');
+        if (statValue) {
+            statValue.textContent = visibleCount;
+        }
+    }
+    
+    // Event Listeners
+    sortSelect.addEventListener('change', function(e) {
+        activeFilters.sort = e.target.value;
+        updateDisplay();
+    });
+    
+    categoryFilter.addEventListener('click', function(e) {
+        if (e.target.classList.contains('category-btn')) {
+            // Update active button
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            e.target.classList.add('active');
+            
+            // Update filter
+            activeFilters.category = e.target.dataset.category;
+            updateDisplay();
+        }
+    });
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const filterType = this.dataset.filter;
+            
+            // Update active button
+            document.querySelectorAll('.sort-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            // Update filter
+            activeFilters.filter = filterType;
+            updateDisplay();
+        });
+    });
+    
+    refreshBtn?.addEventListener('click', function() {
+        window.location.reload();
+    });
+    
+    refreshListBtn?.addEventListener('click', function() {
+        window.location.reload();
+    });
+    
+    // Global functions for filter removal
+    window.removeCategoryFilter = function() {
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector('.category-btn[data-category="all"]').classList.add('active');
+        activeFilters.category = 'all';
+        updateDisplay();
+    };
+    
+    window.removeFilter = function(filterType) {
+        if (activeFilters.filter === filterType) {
+            document.querySelectorAll('.sort-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('.sort-button[data-filter="all"]').classList.add('active');
+            activeFilters.filter = 'all';
+            updateDisplay();
+        }
+    };
+    
+    window.removeSortFilter = function() {
+        sortSelect.value = 'recent';
+        activeFilters.sort = 'recent';
+        updateDisplay();
+    };
+    
+    window.resetFilters = function() {
+        // Reset all filters
+        activeFilters = {
+            category: 'all',
+            sort: 'recent',
+            filter: 'all'
+        };
+        
+        // Reset UI
+        sortSelect.value = 'recent';
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector('.category-btn[data-category="all"]').classList.add('active');
+        
+        document.querySelectorAll('.sort-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector('.sort-button[data-filter="all"]').classList.add('active');
+        
+        updateDisplay();
+    };
+    
+    // Initialize
+    updateFilterTags();
+    
+    // Add distance data to cards (simulated)
+    errandCards.forEach(card => {
+        // Simulate distance based on barangay
+        const errandBarangay = card.dataset.barangay;
+        let distance = 2; // Default
+        
+        // Simple distance simulation based on barangay
+        if (userBarangay === errandBarangay) {
+            distance = 1;
+        } else if (['Barangay 1', 'Barangay 2'].includes(errandBarangay)) {
+            distance = 3;
+        } else {
+            distance = 5;
+        }
+        
+        card.dataset.distance = distance;
+        
+        // Update distance badge
+        const distanceBadge = card.querySelector('.distance-badge');
+        if (distanceBadge) {
+            distanceBadge.innerHTML = `<i class="fas fa-location-arrow"></i> ~${distance}km away`;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+
+{% block title %}Errand Management - Admin{% endblock %}
+{% block header_title %}Errand Management{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .filters {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-select {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+        color: var(--text-primary);
+    }
+
+    .errands-table {
+        background: var(--surface);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .table-header {
+        display: grid;
+        grid-template-columns: 0.5fr 1fr 1fr 1fr 1fr 1fr 1fr;
+        padding: 1rem 1.5rem;
+        background: var(--primary-light);
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .table-row {
+        display: grid;
+        grid-template-columns: 0.5fr 1fr 1fr 1fr 1fr 1fr 1fr;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        align-items: center;
+    }
+
+    .table-row:hover {
+        background: var(--background);
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .badge-pending { background: var(--text-muted); color: white; }
+    .badge-accepted { background: var(--info); color: white; }
+    .badge-in-progress { background: var(--warning); color: white; }
+    .badge-completed { background: var(--success); color: white; }
+    .badge-canceled { background: var(--error); color: white; }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+
+    .status-form {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .fee-amount {
+        font-weight: 600;
+        color: var(--primary);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 1024px) {
+        .table-header, .table-row {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+        
+        .filters {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="page-header">
+    <h1 style="margin: 0; font-size: 1.8rem;">Errand Management</h1>
+    <span class="badge badge-info">Total Errands: {{ errands|length }}</span>
+</div>
+
+<div class="filters">
+    <select class="filter-select" id="statusFilter">
+        <option value="">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="accepted">Accepted</option>
+        <option value="in-progress">In Progress</option>
+        <option value="completed">Completed</option>
+        <option value="canceled">Canceled</option>
+    </select>
+    
+    <select class="filter-select" id="categoryFilter">
+        <option value="">All Categories</option>
+        <option value="Food Delivery">Food Delivery</option>
+        <option value="Grocery Shopping">Grocery Shopping</option>
+        <option value="Package Pickup">Package Pickup</option>
+        <option value="Document Processing">Document Processing</option>
+        <option value="Other Errands">Other Errands</option>
+    </select>
+</div>
+
+<div class="errands-table">
+    <div class="table-header">
+        <div>ID</div>
+        <div>Category</div>
+        <div>Client</div>
+        <div>Runner</div>
+        <div>Fee</div>
+        <div>Status</div>
+        <div>Actions</div>
+    </div>
+
+    {% for errand in errands %}
+    <div class="table-row" data-status="{{ errand.status|lower|replace(' ', '-') }}" data-category="{{ errand.category }}">
+        <div class="errand-id">#{{ errand.id }}</div>
+        
+        <div class="errand-category">
+            <strong>{{ errand.category }}</strong>
+        </div>
+        
+        <div class="client-info">
+            {{ errand.user_client.username }}
+        </div>
+
+        <div class="runner-info">
+            {{ errand.user_runner.username if errand.user_runner else 'Not assigned' }}
+        </div>
+        
+        <div class="fee-amount">
+            ₱{{ "%.2f"|format(errand.proposed_fee) }}
+        </div>
+        
+        <div>
+            <span class="badge badge-{{ errand.status|lower|replace(' ', '-') }}">
+                {{ errand.status }}
+            </span>
+        </div>
+        
+        <div class="action-buttons">
+            <form method="POST" action="{{ url_for('main.admin_update_errand_status', errand_id=errand.id) }}" class="status-form">
+                <select name="status" class="filter-select" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">
+                    <option value="Pending" {% if errand.status == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="Accepted" {% if errand.status == 'Accepted' %}selected{% endif %}>Accepted</option>
+                    <option value="In Progress" {% if errand.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Completed" {% if errand.status == 'Completed' %}selected{% endif %}>Completed</option>
+                    <option value="Canceled" {% if errand.status == 'Canceled' %}selected{% endif %}>Canceled</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary">Update</button>
+            </form>
+            
+            <a href="{{ url_for('main.view_errand', errand_id=errand.id) }}" class="btn btn-sm btn-secondary">
+                View
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not errands %}
+<div class="empty-state">
+    <div class="empty-state-icon">
+        <i class="fas fa-tasks"></i>
+    </div>
+    <h3 class="empty-state-title">No Errands Found</h3>
+    <p class="empty-state-description">There are no errands in the system yet.</p>
+</div>
+{% endif %}
+
+<script>
+document.getElementById('statusFilter').addEventListener('change', filterErrands);
+document.getElementById('categoryFilter').addEventListener('change', filterErrands);
+
+function filterErrands() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    const rows = document.querySelectorAll('.table-row');
+    
+    rows.forEach(row => {
+        const status = row.getAttribute('data-status');
+        const category = row.getAttribute('data-category');
+        
+        const statusMatch = !statusFilter || status === statusFilter;
+        const categoryMatch = !categoryFilter || category === categoryFilter;
+        
+        if (statusMatch && categoryMatch) {
+            row.style.display = 'grid';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

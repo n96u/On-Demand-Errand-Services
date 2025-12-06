@@ -1,0 +1,705 @@
+<!-- templates/payment/receipt.html -->
+{% extends 'base.html' %}
+
+{% block title %}Receipt - Errand #{{ errand.id }}{% endblock %}
+{% block header_title %}Receipt{% endblock %}
+
+{% block content %}
+<style>
+    /* Screen styles */
+    .receipt-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    
+    .receipt-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #eee;
+    }
+    
+    .company-info h1 {
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .invoice-details {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 6px;
+    }
+    
+    .details-left, .details-right {
+        flex: 1;
+    }
+    
+    .item-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .item-label {
+        font-weight: 600;
+        color: #666;
+    }
+    
+    .item-value {
+        text-align: right;
+    }
+    
+    .breakdown-section {
+        margin: 2rem 0;
+        padding: 1.5rem;
+        background: #f5f5f5;
+        border-radius: 6px;
+    }
+    
+    .total-section {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #333;
+        text-align: right;
+    }
+    
+    .total-amount {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+    
+    .badge-paid { background: #28a745; color: white; }
+    .badge-pending { background: #ffc107; color: #333; }
+    .badge-refunded { background: #17a2b8; color: white; }
+    .badge-refund-pending { background: #ffc107; color: #333; }
+    
+    .print-section {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #eee;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+    
+    .refund-notice {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        padding: 1rem;
+        border-radius: 6px;
+        margin: 1rem 0;
+    }
+    
+    /* Responsive for screen */
+    @media (max-width: 768px) {
+        .invoice-details {
+            flex-direction: column;
+        }
+        
+        .details-left, .details-right {
+            margin-bottom: 1rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .receipt-container {
+            padding: 1rem;
+        }
+    }
+    
+@media print {
+    @page {
+        size: A4;
+        margin: 0.5cm !important; /* Add small margin */
+    }
+    
+    body {
+        transform: scale(0.68) !important;
+        transform-origin: top !important; 
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        color: black !important;
+        font-family: "Arial", sans-serif !important;
+        font-size: 10pt !important; /* Reduced from 11pt */
+        line-height: 1.2 !important; /* Reduced from 1.3 */
+        width: 100% !important;
+        height: auto !important;
+        position: relative !important;
+    }
+    
+    /* Hide all UI elements */
+    nav, header, footer, 
+    .print-section,
+    .action-buttons,
+    .sidebar,
+    .topbar,
+    .btn,
+    button,
+    .notification-badge,
+    .navbar,
+    .header,
+    .no-print {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        width: 0 !important;
+        opacity: 0 !important;
+    }
+    
+    /* Receipt container */
+    .receipt-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        background: white !important;
+        position: relative !important;
+        transform: none !important;
+        box-sizing: border-box !important;
+        /* ADD these to control spacing */
+        padding-top: 0.5cm !important;
+    }
+    
+    /* All content sections - REDUCE SPACING */
+    .receipt-header,
+    .invoice-details,
+    .errand-info,
+    .breakdown-section,
+    .payment-info,
+    .total-section,
+    .refund-notice {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box !important;
+        page-break-inside: avoid !important;
+    }
+    
+    /* Receipt header - REDUCE SPACING */
+    .receipt-header {
+        text-align: center !important;
+        margin: 0 0 10pt 0 !important; /* Reduced from 15pt */
+        padding-bottom: 8pt !important; /* Reduced spacing */
+        border-bottom: 2pt solid #000000 !important;
+    }
+    
+    .company-info {
+        text-align: center !important;
+        margin-bottom: 8pt !important; /* Reduced from 10pt */
+    }
+    
+    .company-info h1 {
+        color: #000000 !important;
+        font-size: 20pt !important; /* Reduced from 22pt */
+        font-weight: bold !important;
+        margin: 0 0 4pt 0 !important; /* Reduced spacing */
+        padding: 0 !important;
+    }
+    
+    /* Invoice details - REDUCE SPACING */
+    .invoice-details {
+        display: block !important;
+        background: transparent !important;
+        border: 1pt solid #cccccc !important;
+        margin: 0 0 12pt 0 !important; /* Reduced from 15pt */
+        padding: 8pt !important; /* Reduced padding */
+        page-break-inside: avoid !important;
+    }
+    
+    .details-left, .details-right {
+        width: 100% !important;
+        margin-bottom: 6pt !important; /* Reduced from 8pt */
+        padding: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    .details-left:last-child, .details-right:last-child {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Content sections - REDUCE SPACING */
+    .errand-info,
+    .breakdown-section,
+    .payment-info {
+        margin: 0 0 12pt 0 !important; /* Reduced spacing */
+        padding: 0 !important;
+    }
+    
+    .breakdown-section {
+        background: #f8f8f8 !important;
+        border: 1pt solid #dddddd !important;
+        padding: 10pt !important; /* Reduced from 12pt */
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .total-section {
+        margin: 15pt 0 0 0 !important; /* Reduced from 20pt */
+        padding-top: 10pt !important; /* Reduced spacing */
+        border-top: 2pt solid #000000 !important;
+    }
+    
+    /* Item rows - REDUCE SPACING */
+    .item-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        width: 100% !important;
+        margin-bottom: 4pt !important; /* Reduced from 6pt */
+        padding-bottom: 4pt !important; /* Reduced from 6pt */
+        border-bottom: 0.5pt solid #eeeeee !important;
+        box-sizing: border-box !important;
+        flex-wrap: nowrap !important;
+    }
+    
+    .item-row:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    
+    .item-label {
+        font-weight: bold !important;
+        color: #333333 !important;
+        min-width: 40% !important;
+        max-width: 40% !important;
+        font-size: 9pt !important; /* Reduced from 10pt */
+        padding-right: 8pt !important;
+        box-sizing: border-box !important;
+    }
+    
+    .item-value {
+        text-align: right !important;
+        word-break: break-word !important;
+        min-width: 55% !important;
+        max-width: 55% !important;
+        font-size: 9pt !important; /* Reduced from 10pt */
+        box-sizing: border-box !important;
+    }
+    
+    /* Headings - REDUCE SPACING */
+    h3 {
+        font-size: 11pt !important; /* Reduced from 12pt */
+        font-weight: bold !important;
+        color: #000000 !important;
+        margin: 10pt 0 6pt 0 !important; /* Reduced spacing */
+        padding: 0 !important;
+        text-align: left !important;
+        width: 100% !important;
+        border-bottom: 1pt solid #cccccc !important;
+        padding-bottom: 3pt !important; /* Reduced spacing */
+    }
+    
+    /* Status badges */
+    .status-badge {
+        display: inline-block !important;
+        background: #f0f0f0 !important;
+        color: #000000 !important;
+        border: 1pt solid #aaaaaa !important;
+        padding: 2pt 6pt !important;
+        border-radius: 2pt !important;
+        font-size: 8pt !important; /* Reduced from 9pt */
+        font-weight: bold !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5pt !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        margin-left: 4pt !important;
+    }
+    
+    .badge-paid { 
+        background: #d4edda !important; 
+        color: #155724 !important;
+        border-color: #c3e6cb !important;
+    }
+    .badge-pending { 
+        background: #fff3cd !important; 
+        color: #856404 !important;
+        border-color: #ffeaa7 !important;
+    }
+    .badge-refunded { 
+        background: #d1ecf1 !important; 
+        color: #0c5460 !important;
+        border-color: #bee5eb !important;
+    }
+    
+    /* Refund notice - REDUCE SPACING */
+    .refund-notice {
+        background: #fff3cd !important;
+        border: 1pt solid #ffeaa7 !important;
+        padding: 6pt !important; /* Reduced from 8pt */
+        margin: 6pt 0 !important; /* Reduced from 8pt */
+        text-align: center !important;
+        font-size: 9pt !important; /* Reduced from 10pt */
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    /* Print footer */
+    .receipt-header::after {
+        content: "Printed from GrabItDone | " attr(data-print-date);
+        display: block;
+        font-size: 7pt !important; /* Reduced from 8pt */
+        color: #666666;
+        margin-top: 3pt !important; /* Reduced spacing */
+        text-align: center !important;
+        width: 100% !important;
+    }
+    
+    /* Total amount */
+    .total-amount {
+        font-size: 12pt !important; /* Reduced from 14pt */
+        font-weight: bold !important;
+        color: #000000 !important;
+    }
+    
+    /* CRITICAL: Force everything on one page */
+    .receipt-container {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
+        max-height: 10.5in !important; /* Limit height to A4 */
+    }
+    
+    /* Add wrapper to keep payment-info with rest */
+    .payment-info {
+        page-break-inside: avoid !important;
+        page-break-before: avoid !important;
+        margin-bottom: 0 !important; /* Remove bottom margin */
+    }
+    
+    /* Ensure no overflow */
+    html, body {
+        overflow: visible !important;
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    
+    * {
+        max-width: 100% !important;
+        overflow-wrap: break-word !important;
+        word-wrap: break-word !important;
+    }
+    
+    /* Add compact mode for print */
+    .compact-print * {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+}
+</style>
+
+<div class="receipt-container">
+    <div class="receipt-header">
+        <div class="company-info">
+            <h1>GrabItDone</h1>
+            <p>Errand Service Receipt</p>
+            <p><small>Transaction ID: {{ payment.transaction_id if payment else 'N/A' }}</small></p>
+        </div>
+    </div>
+    
+    <!-- Refund Status Notice -->
+    {% if refund_status == 'refunded' %}
+    <div class="refund-notice">
+        <strong><i class="fas fa-info-circle"></i> REFUND NOTICE:</strong>
+        <p>This payment has been refunded on 
+            {% if payment and payment.refunded_at %}
+                {{ payment.refunded_at.strftime('%B %d, %Y %I:%M %p') }}.
+            {% else %}
+                {{ errand.updated_at.strftime('%B %d, %Y %I:%M %p') }}.
+            {% endif %}
+        </p>
+    </div>
+    {% elif refund_status == 'refund_pending' %}
+    <div class="refund-notice">
+        <strong><i class="fas fa-clock"></i> REFUND PENDING:</strong>
+        <p>A refund request is currently pending admin approval.</p>
+    </div>
+    {% endif %}
+    
+    <div class="invoice-details">
+        <div class="details-left">
+            <p><strong>Invoice To:</strong></p>
+            <p>{{ client.first_name }} {{ client.last_name }}</p>
+            <p>{{ client.email }}</p>
+            <p>{{ client.phone }}</p>
+            <p>{{ client.barangay }}</p>
+        </div>
+        
+        <div class="details-right">
+            <p><strong>Invoice Details:</strong></p>
+            <p>Invoice #: {{ errand.id }}</p>
+            <p>Date: {{ errand.created_at.strftime('%B %d, %Y') }}</p>
+            <p>Time: {{ errand.created_at.strftime('%I:%M %p') }}</p>
+            <p>
+                Status: 
+                {% if refund_status == 'refunded' %}
+                    <span class="status-badge badge-refunded">REFUNDED</span>
+                {% elif refund_status == 'refund_pending' %}
+                    <span class="status-badge badge-refund-pending">REFUND PENDING</span>
+                {% elif errand.status == 'Completed' %}
+                    <span class="status-badge badge-paid">PAID</span>
+                {% elif errand.status == 'Canceled' %}
+                    <span class="status-badge badge-pending">CANCELED</span>
+                {% else %}
+                    <span class="status-badge badge-pending">PENDING</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    
+    <div class="errand-info">
+        <h3>Errand Details</h3>
+        <div class="item-row">
+            <div class="item-label">Service Type:</div>
+            <div class="item-value">{{ errand.category }}</div>
+        </div>
+        <div class="item-row">
+            <div class="item-label">Description:</div>
+            <div class="item-value">{{ errand.description|truncate(100) }}</div>
+        </div>
+        <div class="item-row">
+            <div class="item-label">Pickup Location:</div>
+            <div class="item-value">{{ errand.pickup_address|truncate(50) }}</div>
+        </div>
+        <div class="item-row">
+            <div class="item-label">Drop-off Location:</div>
+            <div class="item-value">{{ errand.dropoff_address|truncate(50) }}</div>
+        </div>
+        <div class="item-row">
+            <div class="item-label">Barangay:</div>
+            <div class="item-value">{{ errand.barangay }}</div>
+        </div>
+        {% if runner %}
+        <div class="item-row">
+            <div class="item-label">Runner:</div>
+            <div class="item-value">{{ runner.first_name }} {{ runner.last_name }}</div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="breakdown-section">
+        <h3>Payment Breakdown</h3>
+        
+        <div class="item-row">
+            <div class="item-label">Service Fee:</div>
+            <div class="item-value">₱{{ "%.2f"|format(total_amount) }}</div>
+        </div>
+        
+        <div class="item-row">
+            <div class="item-label">Platform Fee (10%):</div>
+            <div class="item-value">₱{{ "%.2f"|format(platform_fee) }}</div>
+        </div>
+        
+        <div class="item-row">
+            <div class="item-label">VAT (12%):</div>
+            <div class="item-value">₱{{ "%.2f"|format(vat_amount) }}</div>
+        </div>
+        
+        {% if runner %}
+        <div class="item-row">
+            <div class="item-label">Runner Earnings:</div>
+            <div class="item-value">₱{{ "%.2f"|format(runner_earnings) }}</div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="total-section">
+        <div class="item-row">
+            <div class="item-label" style="font-size: 1.2rem; font-weight: 700;">Total Amount:</div>
+            <div class="item-value total-amount">₱{{ "%.2f"|format(total_amount) }}</div>
+        </div>
+        {% if refund_status == 'refunded' %}
+        <div class="item-row">
+            <div class="item-label" style="color: var(--info);">Refund Amount:</div>
+            <div class="item-value" style="color: var(--info); font-weight: 700;">-₱{{ "%.2f"|format(total_amount) }}</div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="payment-info">
+        <h3>Payment Information</h3>
+        <div class="item-row">
+            <div class="item-label">Payment Method:</div>
+            <div class="item-value">{{ payment.payment_method|title if payment else 'Wallet' }}</div>
+        </div>
+        <div class="item-row">
+            <div class="item-label">Payment Date:</div>
+            <div class="item-value">
+                {% if payment and payment.paid_at %}
+                    {{ payment.paid_at.strftime('%B %d, %Y %I:%M %p') }}
+                {% else %}
+                    {{ errand.created_at.strftime('%B %d, %Y %I:%M %p') }}
+                {% endif %}
+            </div>
+        </div>
+        {% if payment and payment.released_at %}
+        <div class="item-row">
+            <div class="item-label">Released to Runner:</div>
+            <div class="item-value">{{ payment.released_at.strftime('%B %d, %Y %I:%M %p') }}</div>
+        </div>
+        {% endif %}
+        {% if refund_status == 'refunded' and payment and payment.refunded_at %}
+        <div class="item-row">
+            <div class="item-label">Refund Date:</div>
+            <div class="item-value">{{ payment.refunded_at.strftime('%B %d, %Y %I:%M %p') }}</div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="print-section">
+        <div class="action-buttons">
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="fas fa-print"></i> Print Receipt
+            </button>
+            <a href="{{ url_for('main.view_errand', errand_id=errand.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Errand
+            </a>
+            
+            {% if user.role == 'client' and errand.client_id == user.id and errand.status in ['Completed', 'Canceled'] and not refund_status or refund_status == 'refund_rejected' %}
+            <a href="{{ url_for('main.request_refund', errand_id=errand.id) }}" class="btn btn-warning">
+                <i class="fas fa-money-bill-wave"></i> Request Refund
+            </a>
+            {% endif %}
+        </div>
+        
+        <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+            <i class="fas fa-info-circle"></i> This is an official receipt from GrabItDone.
+            {% if payment %}
+            Transaction ID: {{ payment.transaction_id }}
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<script>
+    // Precise print function with scaling
+    function printReceipt() {
+        // Add print mode to body
+        document.body.classList.add('printing-mode');
+        
+        // Force layout recalculation
+        void document.body.offsetWidth;
+        
+        // Update print timestamp
+        const receiptHeader = document.querySelector('.receipt-header');
+        if (receiptHeader) {
+            const now = new Date();
+            const printDate = now.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            receiptHeader.setAttribute('data-print-date', printDate);
+        }
+        
+        // Update button state
+        const printBtn = event?.target;
+        if (printBtn) {
+            const originalHTML = printBtn.innerHTML;
+            printBtn.innerHTML = printBtn.innerHTML;
+            printBtn.disabled = true;
+            
+            // Print after scaling is applied
+            setTimeout(() => {
+                window.print();
+                
+                // Clean up
+                setTimeout(() => {
+                    document.body.classList.remove('printing-mode');
+                    printBtn.innerHTML = originalHTML;
+                    printBtn.disabled = false;
+                }, 100);
+            }, 350);
+        } else {
+            // Direct print if no button
+            setTimeout(() => window.print(), 100);
+        }
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set initial print date
+        const receiptHeader = document.querySelector('.receipt-header');
+        if (receiptHeader && !receiptHeader.hasAttribute('data-print-date')) {
+            const now = new Date();
+            receiptHeader.setAttribute('data-print-date', 
+                now.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })
+            );
+        }
+        
+        // Setup print buttons
+        document.querySelectorAll('[onclick*="print"], .btn-primary').forEach(btn => {
+            if (btn.textContent.match(/print|receipt/i)) {
+                btn.onclick = printReceipt;
+            }
+        });
+        
+        // Ctrl+P shortcut
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                printReceipt();
+            }
+        });
+        
+        // Add print helper styles
+        const style = document.createElement('style');
+        style.textContent = `
+            body.printing-mode {
+                overflow: hidden !important;
+            }
+            @media screen {
+                .receipt-container {
+                    transition: none !important;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    });
+</script>
+{% endblock %}

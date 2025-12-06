@@ -1,0 +1,59 @@
+<!-- archived_documents.html -->
+{% extends 'base.html' %}
+
+{% block title %}Archived Documents - Admin{% endblock %}
+{% block header_title %}Archived Documents - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h5>Previously Rejected Documents</h5>
+            <p class="mb-0">These are documents from previous verification attempts</p>
+        </div>
+        <div class="card-body">
+            {% if archived_docs %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Document</th>
+                            <th>Submission Date</th>
+                            <th>File Size</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in archived_docs %}
+                        <tr>
+                            <td>{{ doc.original_name }}</td>
+                            <td>{{ doc.timestamp }}</td>
+                            <td>{{ (doc.file_size / 1024)|round|int }} KB</td>
+                            <td>
+                                <a href="/view-archived-doc/{{ user.id }}/{{ doc.filename }}" 
+                                   target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                <h5>No Archived Documents</h5>
+                <p>This user has no previously rejected documents.</p>
+            </div>
+            {% endif %}
+            
+            <div class="mt-3">
+                <a href="{{ url_for('main.admin_verify_user', user_id=user.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Verification
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

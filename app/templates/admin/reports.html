@@ -1,0 +1,551 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports - Admin{% endblock %}
+{% block header_title %}System Reports & Statistics{% endblock %}
+
+{% block content %}
+<style>
+    .reports-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .stat-item {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        text-align: center;
+        border: 1px solid var(--border);
+        transition: var(--transition);
+        cursor: pointer;
+    }
+
+    .stat-item:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--primary);
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-description {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: var(--primary);
+        opacity: 0.8;
+    }
+
+    /* Detailed Stats Sections */
+    .stats-section {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+
+    .section-header {
+        background: var(--primary-light);
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .section-body {
+        padding: 1.5rem;
+    }
+
+    .data-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .data-item {
+        background: var(--background);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        border: 1px solid var(--border);
+    }
+
+    .data-label {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .data-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .data-change {
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .data-change.positive {
+        color: var(--success);
+    }
+
+    .data-change.negative {
+        color: var(--error);
+    }
+
+    .data-change.neutral {
+        color: var(--text-muted);
+    }
+
+    /* User Statistics */
+    .user-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .user-stat-card {
+        background: var(--background);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+    }
+
+    .user-stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .user-stat-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 1.1rem;
+    }
+
+    .user-stat-count {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .user-stat-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .user-stat-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .user-stat-list li:last-child {
+        border-bottom: none;
+    }
+
+    .user-stat-name {
+        color: var(--text-primary);
+    }
+
+    .user-stat-role {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius);
+        background: var(--surface);
+    }
+
+    .request-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        transition: var(--transition);
+    }
+
+    .request-item:hover {
+        background: var(--background);
+    }
+
+    .request-item:last-child {
+        border-bottom: none;
+    }
+
+    .request-user {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .user-details {
+        flex: 1;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .user-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .request-message {
+        flex: 2;
+        padding: 0 1rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .request-date {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        min-width: 120px;
+        text-align: right;
+    }
+
+    .request-actions {
+        display: flex;
+        gap: 0.5rem;
+        min-width: 180px;
+        justify-content: flex-end;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .refresh-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 100;
+    }
+
+    @media (max-width: 768px) {
+        .stats-overview {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .request-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .request-user,
+        .request-message,
+        .request-date,
+        .request-actions {
+            width: 100%;
+        }
+        
+        .request-actions {
+            justify-content: flex-start;
+        }
+        
+        .refresh-btn {
+            bottom: 1rem;
+            right: 1rem;
+        }
+    }
+</style>
+
+<div class="reports-header">
+    <h1 style="margin: 0; font-size: 1.8rem;">System Reports & Statistics</h1>
+    <span class="badge badge-info">Live Dashboard</span>
+</div>
+
+<!-- Quick Stats Overview -->
+<div class="stats-overview">
+    <div class="stat-item" data-url="{{ url_for('main.admin_users') }}">
+        <div class="stat-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-value">{{ report_data.total_users }}</div>
+        <div class="stat-label">Total Users</div>
+        <div class="stat-description">Registered users in the system</div>
+    </div>
+
+    <div class="stat-item" data-url="{{ url_for('main.admin_errands') }}">
+        <div class="stat-icon">
+            <i class="fas fa-tasks"></i>
+        </div>
+        <div class="stat-value">{{ report_data.completed_errands }}</div>
+        <div class="stat-label">Completed Errands</div>
+        <div class="stat-description">Total errands delivered</div>
+    </div>
+
+    <div class="stat-item">
+        <div class="stat-icon">
+            <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <div class="stat-value">₱{{ "%.2f"|format(report_data.total_earnings) }}</div>
+        <div class="stat-label">Total Earnings</div>
+        <div class="stat-description">Revenue from all errands</div>
+    </div>
+
+    <div class="stat-item">
+        <div class="stat-icon">
+            <i class="fas fa-biking"></i>
+        </div>
+        <div class="stat-value">{{ report_data.active_runners }}</div>
+        <div class="stat-label">Active Runners</div>
+        <div class="stat-description">Runners available for errands</div>
+    </div>
+
+    <div class="stat-item" data-url="{{ url_for('main.admin_verification_requests') }}">
+        <div class="stat-icon">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stat-value">{{ report_data.pending_verifications }}</div>
+        <div class="stat-label">Pending Verifications</div>
+        <div class="stat-description">Users waiting for approval</div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers to stat items with data-url
+    document.querySelectorAll('.stat-item[data-url]').forEach(item => {
+        item.addEventListener('click', function() {
+            const url = this.getAttribute('data-url');
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
+});
+</script>
+
+<!-- User Statistics Section -->
+<div class="stats-section">
+    <div class="section-header">
+        <h2 class="section-title">
+            <i class="fas fa-chart-bar"></i>
+            User Statistics
+        </h2>
+    </div>
+    <div class="section-body">
+        <div class="user-stats-grid">
+            <div class="user-stat-card">
+                <div class="user-stat-header">
+                    <div class="user-stat-title">User Distribution</div>
+                    <div class="user-stat-count">{{ report_data.total_users }}</div>
+                </div>
+                <ul class="user-stat-list">
+                    <li>
+                        <span class="user-stat-name">Clients</span>
+                        <span class="badge badge-client">{{ users|selectattr('role', 'equalto', 'client')|list|length }}</span>
+                    </li>
+                    <li>
+                        <span class="user-stat-name">Runners</span>
+                        <span class="badge badge-runner">{{ users|selectattr('role', 'equalto', 'runner')|list|length }}</span>
+                    </li>
+                    <li>
+                        <span class="user-stat-name">Admins</span>
+                        <span class="badge badge-admin">{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="user-stat-card">
+                <div class="user-stat-header">
+                    <div class="user-stat-title">Verification Status</div>
+                    <div class="user-stat-count">{{ report_data.total_users }}</div>
+                </div>
+                <ul class="user-stat-list">
+                    <li>
+                        <span class="user-stat-name">Verified Users</span>
+                        <span class="badge badge-success">{{ users|selectattr('verified', 'equalto', true)|list|length }}</span>
+                    </li>
+                    <li>
+                        <span class="user-stat-name">Pending Verification</span>
+                        <span class="badge badge-warning">{{ report_data.pending_verifications }}</span>
+                    </li>
+                    <li>
+                        <span class="user-stat-name">Not Verified</span>
+                        <span class="badge badge-secondary">{{ users|selectattr('verified', 'equalto', false)|list|length - report_data.pending_verifications }}</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="user-stat-card">
+                <div class="user-stat-header">
+                    <div class="user-stat-title">Account Status</div>
+                    <div class="user-stat-count">{{ report_data.total_users }}</div>
+                </div>
+                <ul class="user-stat-list">
+                    <li>
+                        <span class="user-stat-name">Active Accounts</span>
+                        <span class="badge badge-success">{{ users|selectattr('is_active', 'equalto', true)|list|length }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Errand Statistics Section -->
+<div class="stats-section">
+    <div class="section-header">
+        <h2 class="section-title">
+            <i class="fas fa-shipping-fast"></i>
+            Errand Statistics
+        </h2>
+    </div>
+    <div class="section-body">
+        <div class="data-grid">
+            <div class="data-item">
+                <div class="data-label">
+                    <i class="fas fa-clock"></i>
+                    Active Errands
+                </div>
+                <div class="data-value">{{ report_data.active_errands }}</div>
+                <div class="data-change neutral">
+                    Currently being processed
+                </div>
+            </div>
+
+            <div class="data-item">
+                <div class="data-label">
+                    <i class="fas fa-check-circle"></i>
+                    Completion Rate
+                </div>
+                <div class="data-value">
+                    {% set total_errands = report_data.completed_errands + report_data.active_errands %}
+                    {% if total_errands > 0 %}
+                        {{ "%.1f"|format((report_data.completed_errands / total_errands) * 100) }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </div>
+                <div class="data-change positive">
+                    {{ report_data.completed_errands }} of {{ total_errands }} errands
+                </div>
+            </div>
+
+            <div class="data-item">
+                <div class="data-label">
+                    <i class="fas fa-coins"></i>
+                    Average Earnings per Errand
+                </div>
+                <div class="data-value">
+                    {% if report_data.completed_errands > 0 %}
+                        ₱{{ "%.2f"|format(report_data.total_earnings / report_data.completed_errands) }}
+                    {% else %}
+                        ₱0.00
+                    {% endif %}
+                </div>
+                <div class="data-change neutral">
+                    Based on completed errands
+                </div>
+            </div>
+
+            <div class="data-item">
+                <div class="data-label">
+                    <i class="fas fa-calendar-alt"></i>
+                    Today's Activity
+                </div>
+                <div class="data-value">{{ today_errands }}</div>
+                <div class="data-change positive">
+                    Errands created today
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Refresh Button -->
+<button class="btn btn-primary refresh-btn" onclick="location.reload()" title="Refresh Statistics">
+    <i class="fas fa-sync-alt"></i> Refresh
+</button>
+
+<script>
+
+// Auto-refresh every 5 minutes (optional)
+setTimeout(function() {
+    console.log('Auto-refreshing statistics...');
+    location.reload();
+}, 5 * 60 * 1000); // 5 minutes
+</script>
+{% endblock %}

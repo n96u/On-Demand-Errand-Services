@@ -1,0 +1,195 @@
+<!-- [file name]: request_refund.html -->
+{% extends 'base.html' %}
+
+{% block title %}Request Refund - Errand #{{ errand.id }}{% endblock %}
+{% block header_title %}Request Refund{% endblock %}
+
+{% block content %}
+<style>
+    .auth-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .auth-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .auth-header {
+        background: linear-gradient(135deg, var(--warning), var(--warning-dark));
+        color: white;
+        padding: 2rem;
+    }
+
+    .auth-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .auth-form {
+        padding: 2rem;
+    }
+
+    .refund-info {
+        background: var(--background);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        margin-bottom: 2rem;
+        border-left: 4px solid var(--warning);
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-family: inherit;
+        font-size: 0.9rem;
+    }
+
+    textarea.form-control {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .form-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Request Refund for Errand #{{ errand.id }}</h2>
+            <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">
+                Submit a refund request for this errand
+            </p>
+        </div>
+
+        {% if refund_status == 'refund_rejected' %}
+        <div style="background: var(--warning-light); border-left: 4px solid var(--warning); padding: 1rem; margin-bottom: 1.5rem; border-radius: var(--radius);">
+            <strong><i class="fas fa-exclamation-triangle"></i> Previous Refund Request Rejected</strong>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">
+                Your previous refund request was rejected. You can submit a new request with additional information.
+            </p>
+        </div>
+        {% endif %}
+        
+        <div class="auth-form">
+            <div class="refund-info">
+                <h3 style="margin-top: 0;">Errand Information</h3>
+                <div class="info-row">
+                    <span>Category:</span>
+                    <span>{{ errand.category }}</span>
+                </div>
+                <div class="info-row">
+                    <span>Status:</span>
+                    <span class="badge badge-{{ errand.status|lower|replace(' ', '-') }}">
+                        {{ errand.status }}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span>Total Paid:</span>
+                    <span>₱{{ "%.2f"|format(payment.amount + payment.vat_amount) }}</span>
+                </div>
+                <div class="info-row">
+                    <span>Payment Status:</span>
+                    <span class="badge badge-{{ payment.payment_status }}">
+                        {{ payment.payment_status|title }}
+                    </span>
+                </div>
+            </div>
+            
+            <form method="POST"> 
+            <input type="hidden" 
+                name="amount_requested" 
+                value="{{ total_paid }}">
+            
+            <div class="form-group">
+                <label class="form-label">Refund Amount</label>
+                <div style="padding: 1.5rem; background: var(--primary-light); border-radius: var(--radius); border: 2px solid var(--primary);">
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 800; color: var(--primary);">
+                            ₱{{ "%.2f"|format(total_paid) }} 
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                            Full refund (includes service fee + VAT)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Reason for Refund <span style="color: var(--error);">*</span></label>
+                <textarea name="reason" 
+                        class="form-control" 
+                        required 
+                        rows="4"
+                        placeholder="Please explain why you're requesting a refund..."></textarea>
+                <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">
+                    Be as specific as possible. This will help us process your request faster.
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <div style="padding: 1rem; background: var(--warning-light); border-radius: var(--radius);">
+                    <strong><i class="fas fa-info-circle"></i> Important:</strong>
+                    <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem;">
+                        <li>Refund requests are reviewed by administrators</li>
+                        <li>Processing time: 24-48 hours</li>
+                        <li>Refunds are credited to your wallet balance</li>
+                        <li>You can withdraw wallet funds after refund is approved</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- BUTTONS -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-warning" style="flex: 1;">
+                    <i class="fas fa-paper-plane"></i> Submit Refund Request
+                </button>
+                <a href="{{ url_for('main.view_errand', errand_id=errand.id) }}" class="btn btn-secondary" style="flex: 1;">
+                    <i class="fas fa-arrow-left"></i> Back to Errand
+                </a>
+            </div>
+        </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

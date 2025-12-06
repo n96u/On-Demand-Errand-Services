@@ -1,0 +1,904 @@
+{% extends 'base.html' %}
+
+{% block title %}My Errands{% endblock %}
+{% block header_title %}My Accepted Errands{% endblock %}
+
+{% block content %}
+<style>
+    /* Improved Styling */
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.8rem;
+        margin: 0;
+        color: var(--text-primary);
+    }
+
+    .page-subtitle {
+        color: var(--text-secondary);
+        margin: 0.5rem 0 0 0;
+    }
+
+    /* Control Bar */
+    .control-bar {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 1.25rem;
+        margin-bottom: 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .stats {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stat-value {
+        font-weight: 700;
+        color: var(--primary);
+        font-size: 1.25rem;
+    }
+
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    /* Status Filter */
+    .status-filter {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+
+    .status-btn {
+        padding: 0.5rem 1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-btn:hover {
+        background: var(--background);
+        color: var(--text-primary);
+    }
+
+    .status-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    /* Errands Table */
+    .errands-table-container {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table thead {
+        background: var(--background);
+    }
+
+    .table th {
+        padding: 1rem 1.25rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        border-bottom: 2px solid var(--border);
+    }
+
+    .table td {
+        padding: 1rem 1.25rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+
+    .table tbody tr {
+        transition: all 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+        background: var(--background);
+    }
+
+    /* Status Badges */
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        white-space: nowrap;
+    }
+
+    .status-accepted {
+        background: rgba(66, 153, 225, 0.1);
+        color: var(--info);
+        border: 1px solid rgba(66, 153, 225, 0.2);
+    }
+
+    .status-in-progress {
+        background: rgba(237, 137, 54, 0.1);
+        color: var(--warning);
+        border: 1px solid rgba(237, 137, 54, 0.2);
+    }
+
+    .status-completed {
+        background: rgba(72, 187, 120, 0.1);
+        color: var(--success);
+        border: 1px solid rgba(72, 187, 120, 0.2);
+    }
+
+    .status-canceled {
+        background: rgba(245, 101, 101, 0.1);
+        color: var(--error);
+        border: 1px solid rgba(245, 101, 101, 0.2);
+    }
+
+    /* Client Info */
+    .client-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .client-avatar {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .client-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .client-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+
+    .client-contact {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius);
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        text-decoration: none;
+        border: 1px solid;
+        transition: all 0.2s ease;
+    }
+
+    .btn-start {
+        background: rgba(237, 137, 54, 0.1);
+        color: var(--warning);
+        border-color: rgba(237, 137, 54, 0.2);
+    }
+
+    .btn-start:hover {
+        background: var(--warning);
+        color: white;
+    }
+
+    .btn-complete {
+        background: rgba(72, 187, 120, 0.1);
+        color: var(--success);
+        border-color: rgba(72, 187, 120, 0.2);
+    }
+
+    .btn-complete:hover {
+        background: var(--success);
+        color: white;
+    }
+
+    .btn-cancel {
+        background: rgba(245, 101, 101, 0.1);
+        color: var(--error);
+        border-color: rgba(245, 101, 101, 0.2);
+    }
+
+    .btn-cancel:hover {
+        background: var(--error);
+        color: white;
+    }
+
+    .btn-details {
+        background: rgba(160, 174, 192, 0.1);
+        color: var(--text-muted);
+        border-color: rgba(160, 174, 192, 0.2);
+    }
+
+    .btn-details:hover {
+        background: var(--text-muted);
+        color: white;
+    }
+
+    /* Progress Indicator */
+    .progress-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .progress-dots {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .progress-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--border);
+    }
+
+    .progress-dot.active {
+        background: var(--primary);
+    }
+
+    /* Earnings Summary */
+    .earnings-summary {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .earnings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .earnings-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .earnings-stat {
+        text-align: center;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius);
+    }
+
+    .earnings-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .earnings-label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: var(--text-muted);
+        opacity: 0.7;
+    }
+
+    .empty-state-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .empty-state-description {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Time Indicators */
+    .time-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .time-icon {
+        color: var(--text-muted);
+    }
+
+    .time-text {
+        color: var(--text-secondary);
+    }
+
+    .time-urgent {
+        color: var(--error);
+        font-weight: 600;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .table {
+            display: block;
+            overflow-x: auto;
+        }
+        
+        .table th,
+        .table td {
+            white-space: nowrap;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .control-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+        }
+        
+        .stats {
+            justify-content: space-between;
+        }
+        
+        .header-actions {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .status-filter {
+            justify-content: center;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-btn {
+            justify-content: center;
+        }
+        
+        .table td {
+            padding: 0.75rem 1rem;
+        }
+        
+        .client-cell {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stats {
+            flex-direction: column;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+        
+        .status-filter {
+            flex-direction: column;
+        }
+        
+        .status-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .errands-table-container {
+            border-radius: var(--radius);
+        }
+        
+        .table th,
+        .table td {
+            padding: 0.75rem;
+        }
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .quick-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    .quick-action-btn:hover {
+        background: var(--background);
+        color: var(--text-primary);
+        transform: translateY(-2px);
+    }
+
+    /* Sort Controls */
+    .sort-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .sort-label {
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .sort-select {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 0.9rem;
+        cursor: pointer;
+        min-width: 150px;
+    }
+
+    .sort-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.1);
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">My Accepted Errands</h1>
+        <p class="page-subtitle">Manage and track your accepted errands</p>
+    </div>
+</div>
+
+<!-- Control Bar -->
+<div class="control-bar">
+    <div class="stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ accepted_errands|length }}</span>
+            <span class="stat-label">Total Errands</span>
+        </div>
+        <div class="stat-item">
+            {% set completed_count = accepted_errands|selectattr('status', 'equalto', 'Completed')|list|length %}
+            <span class="stat-value">{{ completed_count }}</span>
+            <span class="stat-label">Completed</span>
+        </div>
+        <div class="stat-item">
+            {% set in_progress_count = accepted_errands|selectattr('status', 'equalto', 'In Progress')|list|length %}
+            <span class="stat-value">{{ in_progress_count }}</span>
+            <span class="stat-label">In Progress</span>
+        </div>
+    </div>
+    
+    <div class="header-actions">
+        <a href="{{ url_for('main.available_errands_runner') }}" class="btn btn-primary">
+            <i class="fas fa-search"></i> Find More Errands
+        </a>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <a href="{{ url_for('main.available_errands_runner') }}" class="quick-action-btn">
+        <i class="fas fa-search"></i> Browse Available
+    </a>
+    <a href="{{ url_for('main.earnings_runner') }}" class="quick-action-btn">
+        <i class="fas fa-chart-line"></i> View Earnings
+    </a>
+    <a href="{{ url_for('main.wallet') }}" class="quick-action-btn">
+        <i class="fas fa-wallet"></i> Check Wallet
+    </a>
+</div>
+
+<!-- Status Filter -->
+<div class="status-filter" id="statusFilter">
+    <button class="status-btn active" data-status="all">
+        <i class="fas fa-layer-group"></i> All ({{ accepted_errands|length }})
+    </button>
+    <button class="status-btn" data-status="Accepted">
+        <i class="fas fa-clock"></i> Accepted ({{ accepted_errands|selectattr('status', 'equalto', 'Accepted')|list|length }})
+    </button>
+    <button class="status-btn" data-status="In Progress">
+        <i class="fas fa-running"></i> In Progress ({{ accepted_errands|selectattr('status', 'equalto', 'In Progress')|list|length }})
+    </button>
+    <button class="status-btn" data-status="Completed">
+        <i class="fas fa-check-circle"></i> Completed ({{ accepted_errands|selectattr('status', 'equalto', 'Completed')|list|length }})
+    </button>
+    <button class="status-btn" data-status="Canceled">
+        <i class="fas fa-times-circle"></i> Canceled ({{ accepted_errands|selectattr('status', 'equalto', 'Canceled')|list|length }})
+    </button>
+</div>
+
+<!-- Sort Controls -->
+<div class="sort-controls">
+    <span class="sort-label">Sort by:</span>
+    <select class="sort-select" id="sortSelect">
+        <option value="recent">Recently Accepted</option>
+        <option value="oldest">Oldest First</option>
+        <option value="price_high">Price: High to Low</option>
+        <option value="price_low">Price: Low to High</option>
+        <option value="category">Category</option>
+        <option value="status">Status</option>
+    </select>
+</div>
+
+<!-- Errands Table -->
+<div class="errands-table-container">
+    {% if accepted_errands %}
+    <table class="table" id="errandsTable">
+        <thead>
+            <tr>
+                <th>Errand ID</th>
+                <th>Category</th>
+                <th>Client</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Timeline</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for errand in accepted_errands %}
+            <tr class="errand-row" 
+                data-id="{{ errand.id }}"
+                data-status="{{ errand.status }}"
+                data-category="{{ errand.category }}"
+                data-price="{{ errand.proposed_fee }}"
+                data-accepted="{{ errand.accepted_at.timestamp() if errand.accepted_at else '' }}"
+                data-completed="{{ errand.completed_at.timestamp() if errand.completed_at else '' }}">
+                <td>
+                    <strong>#{{ errand.id }}</strong>
+                </td>
+                <td>
+                    <div style="font-weight: 500;">{{ errand.category }}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                        {{ errand.created_at.strftime('%b %d') }}
+                    </div>
+                </td>
+                <td>
+                    <div class="client-cell">
+                        <div class="client-avatar">
+                            {{ errand.user_client.username[:1]|upper }}
+                        </div>
+                        <div class="client-details">
+                            <div class="client-name">{{ errand.user_client.username }}</div>
+                            <div class="client-contact">
+                                <i class="fas fa-phone"></i>
+                                {{ errand.user_client.phone or 'No phone' }}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div style="font-weight: 700; color: var(--primary);">
+                        ₱{{ "%.2f"|format(errand.proposed_fee) }}
+                    </div>
+                    {% if errand.final_fee and errand.final_fee != errand.proposed_fee %}
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                        Final: ₱{{ "%.2f"|format(errand.final_fee) }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status-badge status-{{ errand.status|lower|replace(' ', '-') }}">
+                        <i class="fas fa-circle" style="font-size: 0.6rem;"></i>
+                        {{ errand.status }}
+                    </span>
+                </td>
+                <td>
+                    <div class="time-indicator">
+                        <div class="time-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="time-text">
+                            {% if errand.accepted_at %}
+                                Accepted: {{ errand.accepted_at.strftime('%b %d') }}
+                            {% endif %}
+                            {% if errand.completed_at %}
+                                <br>
+                                Completed: {{ errand.completed_at.strftime('%b %d') }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        {% if errand.status == 'Accepted' %}
+                            <a href="{{ url_for('main.update_errand_status', errand_id=errand.id, status='In Progress') }}" 
+                            class="btn btn-warning btn-sm">
+                                Start
+                            </a>
+                        {% elif errand.status == 'In Progress' %}
+                            <a href="{{ url_for('main.complete_errand', errand_id=errand.id) }}" 
+                            class="btn btn-success btn-sm"
+                            onclick="return confirm('Complete errand #{{ errand.id }} and receive payment?')">
+                                Complete
+                            </a>
+                        {% endif %}
+                        
+                        {% if errand.status in ['Accepted', 'In Progress'] %}
+                            <a href="{{ url_for('main.update_errand_status', errand_id=errand.id, status='Canceled') }}" 
+                            class="btn btn-error btn-sm"
+                            onclick="return confirm('Cancel errand #{{ errand.id }}?')">
+                                Cancel
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('main.view_errand', errand_id=errand.id) }}" class="btn btn-secondary btn-sm">
+                            Details
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="fas fa-running"></i>
+        </div>
+        <h3 class="empty-state-title">No Accepted Errands</h3>
+        <p class="empty-state-description">
+            You haven't accepted any errands yet. Browse available errands to get started!
+        </p>
+        <a href="{{ url_for('main.available_errands_runner') }}" class="btn btn-primary">
+            <i class="fas fa-search"></i> Find Available Errands
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Earnings Summary -->
+{% if completed_errands %}
+<div class="earnings-summary">
+    <div class="earnings-header">
+        <h3 style="margin: 0; font-size: 1.25rem;">Earnings Summary</h3>
+        <a href="{{ url_for('main.earnings_runner') }}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-chart-line"></i> View Full Report
+        </a>
+    </div>
+    <div class="earnings-stats">
+        {% set completed_errands_list = accepted_errands|selectattr('status', 'equalto', 'Completed')|list %}
+        {% set total_earnings = completed_errands_list|sum(attribute='final_fee') or completed_errands_list|sum(attribute='proposed_fee') %}
+        {% set today = now.date() %}
+        {% set today_earnings = completed_errands_list|selectattr('completed_at', 'defined')|selectattr('completed_at.date', 'equalto', today)|sum(attribute='final_fee') or completed_errands_list|selectattr('completed_at', 'defined')|selectattr('completed_at.date', 'equalto', today)|sum(attribute='proposed_fee') %}
+        
+        <div class="earnings-stat">
+            <div class="earnings-value">₱{{ "%.2f"|format(total_earnings) }}</div>
+            <div class="earnings-label">Total Earnings</div>
+        </div>
+        <div class="earnings-stat">
+            <div class="earnings-value">₱{{ "%.2f"|format(today_earnings) }}</div>
+            <div class="earnings-label">Today's Earnings</div>
+        </div>
+        <div class="earnings-stat">
+            <div class="earnings-value">{{ completed_errands_list|length }}</div>
+            <div class="earnings-label">Completed Jobs</div>
+        </div>
+        <div class="earnings-stat">
+            <div class="earnings-value">
+                {% if completed_errands_list|length > 0 %}
+                    ₱{{ "%.2f"|format(total_earnings / completed_errands_list|length) }}
+                {% else %}
+                    ₱0.00
+                {% endif %}
+            </div>
+            <div class="earnings-label">Average per Job</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusFilter = document.getElementById('statusFilter');
+    const sortSelect = document.getElementById('sortSelect');
+    const errandRows = Array.from(document.querySelectorAll('.errand-row'));
+    const tableBody = document.querySelector('#errandsTable tbody');
+    
+    let activeStatus = 'all';
+    let activeSort = 'recent';
+    
+    // Status Filtering
+    statusFilter.addEventListener('click', function(e) {
+        if (e.target.classList.contains('status-btn')) {
+            // Update active button
+            document.querySelectorAll('.status-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            e.target.classList.add('active');
+            
+            // Update filter
+            activeStatus = e.target.dataset.status;
+            updateTable();
+        }
+    });
+    
+    // Sort Functionality
+    sortSelect.addEventListener('change', function(e) {
+        activeSort = e.target.value;
+        updateTable();
+    });
+    
+    // Function to update table
+    function updateTable() {
+        let visibleRows = errandRows.slice();
+        
+        // Apply status filter
+        if (activeStatus !== 'all') {
+            visibleRows = visibleRows.filter(row => {
+                return row.dataset.status === activeStatus;
+            });
+        }
+        
+        // Apply sorting
+        visibleRows.sort((a, b) => {
+            switch(activeSort) {
+                case 'recent':
+                    return parseFloat(b.dataset.accepted || 0) - parseFloat(a.dataset.accepted || 0);
+                case 'oldest':
+                    return parseFloat(a.dataset.accepted || 0) - parseFloat(b.dataset.accepted || 0);
+                case 'price_high':
+                    return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
+                case 'price_low':
+                    return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+                case 'category':
+                    return a.dataset.category.localeCompare(b.dataset.category);
+                case 'status':
+                    return a.dataset.status.localeCompare(b.dataset.status);
+                default:
+                    return 0;
+            }
+        });
+        
+        // Clear and re-add rows
+        if (tableBody) {
+            tableBody.innerHTML = '';
+            visibleRows.forEach(row => {
+                tableBody.appendChild(row);
+            });
+            
+            // Show empty message if no rows
+            if (visibleRows.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                        <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>No errands match your selected filter</p>
+                        <button class="btn btn-sm btn-secondary" onclick="resetFilters()">
+                            Reset Filters
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(emptyRow);
+            }
+        }
+    }
+    
+    // Reset filters function
+    window.resetFilters = function() {
+        // Reset status filter
+        document.querySelectorAll('.status-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector('.status-btn[data-status="all"]').classList.add('active');
+        activeStatus = 'all';
+        
+        // Reset sort
+        sortSelect.value = 'recent';
+        activeSort = 'recent';
+        
+        // Update table
+        updateTable();
+    };
+    
+    // Initialize
+    updateTable();
+    
+    // Add hover effects to action buttons
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = 'var(--shadow-sm)';
+        });
+        
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    });
+});
+</script>
+{% endblock %}

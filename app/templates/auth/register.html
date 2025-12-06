@@ -1,0 +1,758 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - GrabItDone{% endblock %}
+{% block header_title %}Join Our Community{% endblock %}
+
+{% block content %}
+<style>
+    .auth-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 0;
+    }
+
+    .auth-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .auth-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .auth-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .auth-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .auth-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .auth-form {
+        padding: 2rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .input-group {
+        position: relative;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        transition: var(--transition);
+        z-index: 3; /* Increased z-index to stay above error borders */
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-family: inherit;
+        font-size: 0.9rem;
+        transition: var(--transition);
+        background: var(--surface);
+        position: relative;
+        z-index: 2; /* Ensure input is above background but below icon */
+    }
+
+    .form-control.with-icon {
+        padding-left: 2.5rem;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.1);
+    }
+
+    .form-control:focus + .input-icon {
+        color: var(--primary);
+    }
+
+    .form-control.error {
+        border-color: var(--error);
+        box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
+        padding-right: 2.5rem; /* Add space for error icon */
+    }
+
+    .error-message {
+        color: var(--error);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    select.form-control {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+        padding-right: 2.5rem;
+    }
+
+    .password-requirements {
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background: var(--background);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+    }
+
+    .requirement {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .requirement.met {
+        color: var(--success);
+    }
+
+    .requirement-icon {
+        font-size: 0.5rem;
+    }
+
+    .requirement.met .requirement-icon {
+        color: var(--success);
+    }
+
+    .form-checkbox {
+        margin-right: 0.5rem;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--background);
+        transition: var(--transition);
+        cursor: pointer;
+    }
+
+    .checkbox-group:hover {
+        border-color: var(--primary-light);
+        background: var(--primary-light);
+    }
+
+    .checkbox-group.error {
+        border-color: var(--error);
+        background: var(--error-light);
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        margin-top: 0.2rem;
+        flex-shrink: 0;
+    }
+
+    .checkbox-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+
+    .checkbox-label a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .checkbox-label a:hover {
+        text-decoration: underline;
+    }
+
+    .btn-register {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        border: none;
+        padding: 1rem;
+        font-weight: 600;
+        border-radius: var(--radius);
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .btn-register:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(201, 181, 156, 0.3);
+    }
+
+    .btn-register:active {
+        transform: translateY(0);
+    }
+
+    .btn-register:disabled {
+        background: var(--text-muted);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .auth-links {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .auth-links a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .auth-links a:hover {
+        text-decoration: underline;
+        color: var(--primary-dark);
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .auth-container {
+            padding: 1rem;
+        }
+        
+        .auth-form {
+            padding: 1.5rem;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Join GrabItDone</h2>
+            <p style="margin: 0.5rem 0 0 0; opacity: 0.9; position: relative; z-index: 1;">Start getting things done today</p>
+        </div>
+        
+        <div class="auth-form">
+            <form method="post" id="registerForm" novalidate>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">First Name *</label>
+                        <div class="input-group">
+                            <i class="input-icon fas fa-user"></i>
+                            <input type="text" name="first_name" id="first_name" class="form-control with-icon" 
+                                   placeholder="Enter your first name" required minlength="2" maxlength="50"
+                                   pattern="[A-Za-z\s]+" title="First name can only contain letters and spaces">
+                        </div>
+                        <div class="error-message" id="first_nameError"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Last Name *</label>
+                        <div class="input-group">
+                            <i class="input-icon fas fa-user"></i>
+                            <input type="text" name="last_name" id="last_name" class="form-control with-icon" 
+                                   placeholder="Enter your last name" required minlength="2" maxlength="50"
+                                   pattern="[A-Za-z\s]+" title="Last name can only contain letters and spaces">
+                        </div>
+                        <div class="error-message" id="last_nameError"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Username *</label>
+                    <div class="input-group">
+                        <i class="input-icon fas fa-at"></i>
+                        <input type="text" name="username" id="username" class="form-control with-icon" 
+                               placeholder="Choose a username" required minlength="3" maxlength="30"
+                               pattern="[a-zA-Z0-9_]+" title="Username can only contain letters, numbers, and underscores">
+                    </div>
+                    <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        This will be your unique identifier on the platform
+                    </div>
+                    <div class="error-message" id="usernameError"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Email Address *</label>
+                    <div class="input-group">
+                        <i class="input-icon fas fa-envelope"></i>
+                        <input type="email" name="email" id="email" class="form-control with-icon" 
+                               placeholder="Enter your email address" required maxlength="100">
+                    </div>
+                    <div class="error-message" id="emailError"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password *</label>
+                    <div class="input-group">
+                        <i class="input-icon fas fa-lock"></i>
+                        <input type="password" name="password" id="password" class="form-control with-icon" 
+                               placeholder="Create a secure password" required minlength="8" maxlength="100">
+                    </div>
+                    <div class="password-requirements">
+                        <div class="requirement" id="length-req">
+                            <i class="fas fa-circle requirement-icon"></i>
+                            <span class="requirement-text">At least 8 characters long</span>
+                        </div>
+                    </div>
+                    <div class="error-message" id="passwordError"></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Role *</label>
+                        <select name="role" id="role" class="form-control" required>
+                            <option value="">Choose your role</option>
+                            <option value="client">Client - I need errands done</option>
+                            <option value="runner">Runner - I want to complete errands</option>
+                        </select>
+                        <div class="error-message" id="roleError"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Phone Number *</label>
+                        <div class="input-group">
+                            <i class="input-icon fas fa-phone"></i>
+                            <input type="tel" name="phone" id="phone" class="form-control with-icon" 
+                                   placeholder="Enter valid phone number" required
+                                   pattern="[0-9]{11}" title="Phone number)"
+                                   maxlength="11">
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">
+                            Enter 11-digit Philippine number starting with 09
+                        </div>
+                        <div class="error-message" id="phoneError"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Barangay *</label>
+                    <select name="barangay" id="barangay" class="form-control" required>
+                        <option value="">Select your barangay</option>
+                        {% for barangay in barangays %}
+                        <option value="{{ barangay }}">{{ barangay }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="error-message" id="barangayError"></div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group" id="termsGroup">
+                        <input type="checkbox" name="terms" id="terms" class="form-checkbox" required>
+                        <label for="terms" class="checkbox-label">
+                            I agree to the <a href="#" style="color: var(--primary);">Terms of Service</a> and 
+                            <a href="#" style="color: var(--primary);">Privacy Policy</a>. I understand that I must 
+                            accept these terms to create an account.
+                        </label>
+                    </div>
+                    <div class="error-message" id="termsError"></div>
+                </div>
+                
+                <button type="submit" class="btn-register" id="submitBtn">
+                    <i class="fas fa-user-plus"></i>
+                    Create Account
+                </button>
+                
+                <div class="auth-links">
+                    <p>Already have an account? <a href="{{ url_for('main.login') }}">Sign in here</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const registerForm = document.getElementById('registerForm');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // Get all form elements
+        const firstName = document.getElementById('first_name');
+        const lastName = document.getElementById('last_name');
+        const username = document.getElementById('username');
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        const role = document.getElementById('role');
+        const phone = document.getElementById('phone');
+        const barangay = document.getElementById('barangay');
+        const terms = document.getElementById('terms');
+        const termsGroup = document.getElementById('termsGroup');
+
+        // Password requirements elements
+        const lengthReq = document.getElementById('length-req');
+
+        // Phone number input restriction - only numbers
+        phone.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+
+        // Validation functions
+        function validateFirstName() {
+            const value = firstName.value.trim();
+            const errorElement = document.getElementById('first_nameError');
+            const lastNameValue = lastName.value.trim();
+            
+            if (!value) {
+                showError(firstName, errorElement, 'First name is required');
+                return false;
+            }
+            
+            if (value.length < 2) {
+                showError(firstName, errorElement, 'First name must be at least 2 characters long');
+                return false;
+            }
+            
+            if (!/^[A-Za-z\s]+$/.test(value)) {
+                showError(firstName, errorElement, 'First name can only contain letters and spaces');
+                return false;
+            }
+            
+            // Check if first name and last name are the same
+            if (lastNameValue && value.toLowerCase() === lastNameValue.toLowerCase()) {
+                showError(firstName, errorElement, 'First name and last name cannot be the same');
+                return false;
+            }
+            
+            clearError(firstName, errorElement);
+            return true;
+        }
+
+        function validateLastName() {
+            const value = lastName.value.trim();
+            const errorElement = document.getElementById('last_nameError');
+            const firstNameValue = firstName.value.trim();
+            
+            if (!value) {
+                showError(lastName, errorElement, 'Last name is required');
+                return false;
+            }
+            
+            if (value.length < 2) {
+                showError(lastName, errorElement, 'Last name must be at least 2 characters long');
+                return false;
+            }
+            
+            if (!/^[A-Za-z\s]+$/.test(value)) {
+                showError(lastName, errorElement, 'Last name can only contain letters and spaces');
+                return false;
+            }
+            
+            // Check if first name and last name are the same
+            if (firstNameValue && value.toLowerCase() === firstNameValue.toLowerCase()) {
+                showError(lastName, errorElement, 'First name and last name cannot be the same');
+                return false;
+            }
+            
+            clearError(lastName, errorElement);
+            return true;
+        }
+
+        function validateUsername() {
+            const value = username.value.trim();
+            const errorElement = document.getElementById('usernameError');
+            
+            if (!value) {
+                showError(username, errorElement, 'Username is required');
+                return false;
+            }
+            
+            if (value.length < 3) {
+                showError(username, errorElement, 'Username must be at least 3 characters long');
+                return false;
+            }
+            
+            if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+                showError(username, errorElement, 'Username can only contain letters, numbers, and underscores');
+                return false;
+            }
+            
+            clearError(username, errorElement);
+            return true;
+        }
+
+        function validateEmail() {
+            const value = email.value.trim();
+            const errorElement = document.getElementById('emailError');
+            
+            if (!value) {
+                showError(email, errorElement, 'Email address is required');
+                return false;
+            }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                showError(email, errorElement, 'Please enter a complete and valid email address (e.g., name@domain.com)');
+                return false;
+            }
+            
+            // Check for common incomplete domains - only show error for actual incomplete domains
+            const domain = value.split('@')[1];
+            if (domain) {
+                const commonIncompleteDomains = ['email.co', 'gmail.co', 'yahoo.co', 'hotmail.co'];
+                const isIncompleteDomain = commonIncompleteDomains.some(incomplete => domain === incomplete);
+                
+                if (isIncompleteDomain) {
+                    showError(email, errorElement, 'Email domain appears incomplete. Please check your email address.');
+                    return false;
+                }
+            }
+            
+            clearError(email, errorElement);
+            return true;
+        }
+
+        function validatePassword() {
+            const value = password.value;
+            const errorElement = document.getElementById('passwordError');
+            
+            if (!value) {
+                showError(password, errorElement, 'Password is required');
+                updatePasswordRequirements(false);
+                return false;
+            }
+            
+            // Check requirements - Only length now
+            const hasLength = value.length >= 8;
+            
+            // Update requirement indicators
+            updatePasswordRequirements(hasLength);
+            
+            if (!hasLength) {
+                showError(password, errorElement, 'Password must be at least 8 characters long');
+                return false;
+            }
+            
+            clearError(password, errorElement);
+            return true;
+        }
+
+        function validateRole() {
+            const value = role.value;
+            const errorElement = document.getElementById('roleError');
+            
+            if (!value) {
+                showError(role, errorElement, 'Please select your role');
+                return false;
+            }
+            
+            clearError(role, errorElement);
+            return true;
+        }
+
+        function validatePhone() {
+            const value = phone.value.trim();
+            const errorElement = document.getElementById('phoneError');
+            
+            if (!value) {
+                showError(phone, errorElement, 'Phone number is required');
+                return false;
+            }
+            
+            const phoneRegex = /^09[0-9]{9}$/;
+            if (!phoneRegex.test(value)) {
+                showError(phone, errorElement, 'Please enter exactly 11 digits');
+                return false;
+            }
+            
+            clearError(phone, errorElement);
+            return true;
+        }
+
+        function validateBarangay() {
+            const value = barangay.value;
+            const errorElement = document.getElementById('barangayError');
+            
+            if (!value) {
+                showError(barangay, errorElement, 'Please select your barangay');
+                return false;
+            }
+            
+            clearError(barangay, errorElement);
+            return true;
+        }
+
+        function validateTerms() {
+            const errorElement = document.getElementById('termsError');
+            
+            if (!terms.checked) {
+                showTermsError('You must agree to the Terms of Service and Privacy Policy to create an account');
+                return false;
+            }
+            
+            clearTermsError();
+            return true;
+        }
+
+        function showTermsError(message) {
+            termsGroup.classList.add('error');
+            const errorElement = document.getElementById('termsError');
+            errorElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+        }
+
+        function clearTermsError() {
+            termsGroup.classList.remove('error');
+            const errorElement = document.getElementById('termsError');
+            errorElement.textContent = '';
+        }
+
+        function updatePasswordRequirements(length) {
+            lengthReq.classList.toggle('met', length);
+        }
+
+        function showError(input, errorElement, message) {
+            input.classList.add('error');
+            errorElement.textContent = message;
+            errorElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+        }
+
+        function clearError(input, errorElement) {
+            input.classList.remove('error');
+            errorElement.textContent = '';
+        }
+
+        function validateForm() {
+            const validations = [
+                validateFirstName(),
+                validateLastName(),
+                validateUsername(),
+                validateEmail(),
+                validatePassword(),
+                validateRole(),
+                validatePhone(),
+                validateBarangay(),
+                validateTerms()
+            ];
+            
+            return validations.every(valid => valid);
+        }
+
+        // Event listeners for real-time validation
+        const inputs = [firstName, lastName, username, email, password, role, phone, barangay, terms];
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                switch(this.id) {
+                    case 'first_name': validateFirstName(); break;
+                    case 'last_name': validateLastName(); break;
+                    case 'username': validateUsername(); break;
+                    case 'email': validateEmail(); break;
+                    case 'password': validatePassword(); break;
+                    case 'role': validateRole(); break;
+                    case 'phone': validatePhone(); break;
+                    case 'barangay': validateBarangay(); break;
+                    case 'terms': validateTerms(); break;
+                }
+            });
+            
+            input.addEventListener('input', function() {
+                if (this.classList.contains('error') || (this.id === 'terms' && termsGroup.classList.contains('error'))) {
+                    switch(this.id) {
+                        case 'first_name': validateFirstName(); break;
+                        case 'last_name': validateLastName(); break;
+                        case 'username': validateUsername(); break;
+                        case 'email': validateEmail(); break;
+                        case 'password': validatePassword(); break;
+                        case 'role': validateRole(); break;
+                        case 'phone': validatePhone(); break;
+                        case 'barangay': validateBarangay(); break;
+                        case 'terms': validateTerms(); break;
+                    }
+                }
+            });
+        });
+
+        // Special cross-validation for first and last names
+        firstName.addEventListener('input', function() {
+            if (lastName.value.trim() && this.classList.contains('error')) {
+                validateFirstName();
+            }
+        });
+
+        lastName.addEventListener('input', function() {
+            if (firstName.value.trim() && this.classList.contains('error')) {
+                validateLastName();
+            }
+        });
+
+        // Password real-time validation
+        password.addEventListener('input', validatePassword);
+
+        // Terms checkbox validation on change
+        terms.addEventListener('change', validateTerms);
+
+        // Form submission
+        registerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (validateForm()) {
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+                
+                // Submit the form
+                this.submit();
+            } else {
+                // Scroll to first error
+                const firstError = document.querySelector('.error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (firstError.id !== 'termsGroup') {
+                        firstError.focus();
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

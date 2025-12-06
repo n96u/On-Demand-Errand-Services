@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Details - {{ payment.transaction_id }}{% endblock %}
+{% block header_title %}Payment Details{% endblock %}
+
+{% block content %}
+<style>
+    .auth-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .auth-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .auth-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .auth-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .auth-form {
+        padding: 2rem;
+    }
+
+    .payment-summary {
+        background: var(--background);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        border-left: 4px solid var(--primary);
+        margin-bottom: 2rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .info-item {
+        padding: 1rem;
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+    }
+
+    .info-label {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+
+    .info-value {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .amount-breakdown {
+        background: var(--background);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        margin: 2rem 0;
+        border: 1px solid var(--border);
+    }
+
+    .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .breakdown-item:last-child {
+        border-bottom: none;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--primary);
+    }
+
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+    }
+
+    .status-prepaid { background: var(--warning-light); color: var(--warning-dark); }
+    .status-released { background: var(--success-light); color: var(--success-dark); }
+    .status-refunded { background: var(--error-light); color: var(--error-dark); }
+
+    @media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Payment Details</h2>
+            <div class="status-badge status-{{ payment.payment_status }}">
+                {{ payment.payment_status|title }}
+            </div>
+        </div>
+        
+        <div class="auth-form">
+            <div class="payment-summary">
+                <h3 style="margin-top: 0;">Transaction #{{ payment.transaction_id }}</h3>
+                <div style="font-size: 2rem; font-weight: 800; color: var(--primary);">
+                    ₱{{ "%.2f"|format(payment.amount) }}
+                </div>
+                <div style="color: var(--text-muted); margin-top: 0.5rem;">
+                    {{ payment.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Errand ID</div>
+                    <div class="info-value">#{{ payment.errand_id }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Category</div>
+                    <div class="info-value">{{ payment.errand.category if payment.errand else 'N/A' }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Client</div>
+                    <div class="info-value">{{ payment.client.username if payment.client else 'N/A' }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Runner</div>
+                    <div class="info-value">{{ payment.runner.username if payment.runner else 'Not assigned' }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Payment Method</div>
+                    <div class="info-value">{{ payment.payment_method|title }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Payment Status</div>
+                    <div class="info-value">{{ payment.payment_status|title }}</div>
+                </div>
+                
+                {% if payment.paid_at %}
+                <div class="info-item">
+                    <div class="info-label">Paid At</div>
+                    <div class="info-value">{{ payment.paid_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+                {% endif %}
+                
+                {% if payment.released_at %}
+                <div class="info-item">
+                    <div class="info-label">Released At</div>
+                    <div class="info-value">{{ payment.released_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+                {% endif %}
+                
+                {% if payment.refunded_at %}
+                <div class="info-item">
+                    <div class="info-label">Refunded At</div>
+                    <div class="info-value">{{ payment.refunded_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="amount-breakdown">
+                <h4 style="margin-top: 0;">Amount Breakdown</h4>
+                
+                <div class="breakdown-item">
+                    <span>Service Amount:</span>
+                    <span>₱{{ "%.2f"|format(payment.amount) }}</span>
+                </div>
+                
+                <div class="breakdown-item">
+                    <span>VAT (12%):</span>
+                    <span>₱{{ "%.2f"|format(payment.vat_amount) }}</span>
+                </div>
+                
+                <div class="breakdown-item">
+                    <span>Platform Fee (10%):</span>
+                    <span>₱{{ "%.2f"|format(payment.platform_fee) }}</span>
+                </div>
+                
+                <div class="breakdown-item">
+                    <span>Runner Earnings:</span>
+                    <span>₱{{ "%.2f"|format(payment.runner_earnings) }}</span>
+                </div>
+            </div>
+
+            {% if errand %}
+            <div style="margin-top: 2rem;">
+                <h4>Related Errand Information</h4>
+                <div style="background: var(--background); padding: 1rem; border-radius: var(--radius);">
+                    <div><strong>Category:</strong> {{ errand.category }}</div>
+                    <div><strong>Description:</strong> {{ errand.description[:100] }}{% if errand.description|length > 100 %}...{% endif %}</div>
+                    <div><strong>Status:</strong> {{ errand.status }}</div>
+                    <div><strong>Created:</strong> {{ errand.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <a href="javascript:window.history.back()" class="btn btn-secondary">Back</a>
+                
+                {% if user_role == 'admin' %}
+                    {% if payment.payment_status == 'prepaid' and payment.errand and payment.errand.status == 'Completed' %}
+                    <a href="{{ url_for('main.admin_release_payment', payment_id=payment.id) }}" 
+                       class="btn btn-success"
+                       onclick="return confirm('Release payment to runner?')">
+                        Release to Runner
+                    </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if user_role == 'admin' and payment.payment_status == 'prepaid' %}
+<!-- Refund Modal -->
+<div id="refundModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); padding: 2rem; border-radius: var(--radius-lg); width: 90%; max-width: 500px;">
+        <h3 style="margin-top: 0;">Process Refund</h3>
+        <form method="POST" action="{{ url_for('main.admin_refund_payment', payment_id=payment.id) }}">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem;">Refund Amount</label>
+                <input type="number" 
+                       name="refund_amount" 
+                       class="form-control" 
+                       step="0.01" 
+                       max="{{ payment.amount + payment.vat_amount }}"
+                       placeholder="Leave empty for full refund">
+                <small style="color: var(--text-muted);">Full refund: ₱{{ "%.2f"|format(payment.amount + payment.vat_amount) }}</small>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem;">Reason</label>
+                <textarea name="reason" class="form-control" rows="3" required></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-warning">Process Refund</button>
+                <button type="button" class="btn btn-secondary" onclick="hideRefundModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showRefundModal() {
+    document.getElementById('refundModal').style.display = 'block';
+}
+
+function hideRefundModal() {
+    document.getElementById('refundModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target.id === 'refundModal') {
+        hideRefundModal();
+    }
+}
+</script>
+{% endif %}
+{% endblock %}

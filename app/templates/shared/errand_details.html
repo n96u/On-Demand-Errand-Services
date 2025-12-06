@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}Errand Details #{{ errand.id }}{% endblock %}
+{% block header_title %}Errand Details #{{ errand.id }}{% endblock %}
+
+{% block content %}
+<style>
+    .auth-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .auth-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .auth-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .auth-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .auth-form {
+        padding: 2rem;
+    }
+
+    .errand-status-badge {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .description-box {
+        background: var(--background);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        border-left: 4px solid var(--primary);
+        margin: 1rem 0;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius);
+        margin: 1rem 0;
+    }
+
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .auth-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Errand Details #{{ errand.id }}</h2>
+            <span class="badge badge-{{ errand.status|lower|replace(' ', '-') }} errand-status-badge">{{ errand.status }}</span>
+        </div>
+        <div class="auth-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input type="text" class="form-control" value="{{ errand.category }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <input type="text" class="form-control" value="{{ errand.status }}" readonly>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <div class="description-box">
+                    {{ errand.description }}
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Pickup Address</label>
+                    <input type="text" class="form-control" value="{{ errand.pickup_address }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Drop-off Address</label>
+                    <input type="text" class="form-control" value="{{ errand.dropoff_address }}" readonly>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Barangay</label>
+                    <input type="text" class="form-control" value="{{ errand.barangay }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Preferred Time</label>
+                    <input type="text" class="form-control" value="{{ errand.preferred_time or 'Flexible' }}" readonly>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Proposed Fee</label>
+                    <input type="text" class="form-control" value="₱{{ '%.2f'|format(errand.proposed_fee) }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Final Fee</label>
+                    <input type="text" class="form-control" value="₱{{ '%.2f'|format(errand.final_fee or errand.proposed_fee) }}" readonly>
+                </div>
+            </div>
+
+            <!-- Client Information -->
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ errand.client.username[0]|upper }}
+                </div>
+                <div>
+                    <div style="font-weight: 600;">{{ errand.client.username }}</div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">Client</div>
+                    {% if errand.client.phone %}
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">{{ errand.client.phone }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Runner Information (if assigned) -->
+            {% if errand.runner %}
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ errand.runner.username[0]|upper }}
+                </div>
+                <div>
+                    <div style="font-weight: 600;">{{ errand.runner.username }}</div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">Runner</div>
+                    {% if errand.runner.phone %}
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">{{ errand.runner.phone }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Created</label>
+                    <input type="text" class="form-control" value="{{ errand.created_at.strftime('%Y-%m-%d %H:%M') }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">{% if errand.completed_at %}Completed{% else %}Last Updated{% endif %}</label>
+                    <input type="text" class="form-control" 
+                        value="{% if errand.completed_at %}{{ errand.completed_at.strftime('%Y-%m-%d %H:%M') }}{% else %}{{ errand.updated_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}" 
+                        readonly>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary" style="flex: 1;">Back to Dashboard</a>
+                {% if session.get('user_role') == 'runner' and errand.status == 'Pending' %}
+                <a href="{{ url_for('main.accept_errand', errand_id=errand.id) }}" 
+                class="btn btn-success"
+                onclick="return confirm('Accept this errand?')">
+                    Accept Errand
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
