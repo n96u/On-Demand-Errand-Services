@@ -1,0 +1,148 @@
+	CREATE TABLE user (
+	id INTEGER NOT NULL, 
+	username VARCHAR(80) NOT NULL, 
+	email VARCHAR(120) NOT NULL, 
+	password_hash VARCHAR(200) NOT NULL, 
+	role VARCHAR(20) NOT NULL, 
+	first_name VARCHAR(50), 
+	last_name VARCHAR(50), 
+	phone VARCHAR(20), 
+	barangay VARCHAR(100), 
+	address TEXT, 
+	bio TEXT, 
+	vehicle_type VARCHAR(50), 
+	available_hours VARCHAR(100), 
+	verified BOOLEAN, 
+	verification_requested BOOLEAN, 
+	verification_status VARCHAR(20), 
+	last_verification_date DATETIME, 
+	rejection_reason TEXT, 
+	is_active BOOLEAN, 
+	created_at DATETIME, 
+	wallet_balance FLOAT, 
+	total_earnings FLOAT, 
+	total_spent FLOAT, 
+	PRIMARY KEY (id), 
+	UNIQUE (username), 
+	UNIQUE (email)
+)
+
+
+CREATE TABLE errand (
+	id INTEGER NOT NULL, 
+	category VARCHAR(100) NOT NULL, 
+	description TEXT NOT NULL, 
+	pickup_address VARCHAR(200) NOT NULL, 
+	dropoff_address VARCHAR(200) NOT NULL, 
+	barangay VARCHAR(100) NOT NULL, 
+	preferred_time DATETIME, 
+	proposed_fee FLOAT NOT NULL, 
+	final_fee FLOAT, 
+	status VARCHAR(20), 
+	client_id INTEGER NOT NULL, 
+	runner_id INTEGER, 
+	payment_id INTEGER, 
+	created_at DATETIME, 
+	updated_at DATETIME, 
+	accepted_at DATETIME, 
+	completed_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(client_id) REFERENCES user (id), 
+	FOREIGN KEY(runner_id) REFERENCES user (id), 
+	FOREIGN KEY(payment_id) REFERENCES payment (id)
+)
+
+CREATE TABLE system_config (
+	id INTEGER NOT NULL, 
+	"key" VARCHAR(100) NOT NULL, 
+	value TEXT NOT NULL, 
+	description TEXT, 
+	PRIMARY KEY (id), 
+	UNIQUE ("key")
+)
+
+CREATE TABLE payment (
+	id INTEGER NOT NULL, 
+	transaction_id VARCHAR(100) NOT NULL, 
+	errand_id INTEGER NOT NULL, 
+	client_id INTEGER NOT NULL, 
+	runner_id INTEGER, 
+	amount FLOAT NOT NULL, 
+	platform_fee FLOAT NOT NULL, 
+	vat_amount FLOAT NOT NULL, 
+	runner_earnings FLOAT NOT NULL, 
+	payment_method VARCHAR(50) NOT NULL, 
+	payment_status VARCHAR(20), 
+	created_at DATETIME, 
+	paid_at DATETIME, 
+	released_at DATETIME, 
+	refunded_at DATETIME, 
+	PRIMARY KEY (id), 
+	UNIQUE (transaction_id), 
+	FOREIGN KEY(errand_id) REFERENCES errand (id), 
+	FOREIGN KEY(client_id) REFERENCES user (id), 
+	FOREIGN KEY(runner_id) REFERENCES user (id)
+)
+
+CREATE TABLE notification (
+	id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	message TEXT NOT NULL, 
+	is_read BOOLEAN, 
+	created_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES user (id)
+)
+
+CREATE TABLE wallet (
+	id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	balance FLOAT, 
+	created_at DATETIME, 
+	updated_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES user (id)
+)
+
+	CREATE TABLE payment_method (
+	id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	method_type VARCHAR(50) NOT NULL, 
+	provider VARCHAR(100), 
+	account_name VARCHAR(200), 
+	account_number VARCHAR(100), 
+	is_default BOOLEAN, 
+	is_verified BOOLEAN, 
+	created_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES user (id)
+)
+
+CREATE TABLE password_reset_token (
+	id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	token VARCHAR(200) NOT NULL, 
+	expires_at DATETIME NOT NULL, 
+	used BOOLEAN, 
+	created_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES user (id), 
+	UNIQUE (token)
+)
+
+	CREATE TABLE wallet_transaction (
+	id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	wallet_id INTEGER NOT NULL, 
+	transaction_type VARCHAR(50) NOT NULL, 
+	amount FLOAT NOT NULL, 
+	balance_before FLOAT NOT NULL, 
+	balance_after FLOAT NOT NULL, 
+	description TEXT, 
+	reference_id VARCHAR(100), 
+	status VARCHAR(20), 
+	created_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES user (id), 
+	FOREIGN KEY(wallet_id) REFERENCES wallet (id)
+)
