@@ -19,7 +19,7 @@ def calculate_fees(amount):
     platform_fee = (amount_decimal * Decimal('0.10')).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
     vat_amount = ((amount_decimal + platform_fee) * Decimal('0.12')).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
     runner_earnings = (amount_decimal - platform_fee).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
-    total_amount = (amount_decimal + vat_amount).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+    total_amount = (amount_decimal + vat_amount).quzantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
     
     return {
         'amount': float(amount_decimal),

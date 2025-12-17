@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from werkzeug.utils import secure_filename
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import wraps
 import os
 from app import db
@@ -415,27 +415,9 @@ def runner_dashboard(user):
     available_errands = Errand.query.filter_by(status='Pending').all()
     accepted_errands = Errand.query.filter_by(runner_id=session['user_id']).all()
     
-    # FIX: Calculate earnings from PAYMENT records, not errand fees
-    # Get all payments where this runner is the recipient
-    runner_payments = Payment.query.filter_by(
-        runner_id=session['user_id'],
-        payment_status='released'  # Only count released payments
-    ).all()
-    
-    # Calculate actual runner earnings
-    total_earnings = sum(p.runner_earnings for p in runner_payments)
-    
-    # Calculate weekly earnings (last 7 days)
-    one_week_ago = datetime.utcnow() - timedelta(days=7)
-    weekly_payments = Payment.query.filter(
-        Payment.runner_id == session['user_id'],
-        Payment.payment_status == 'released',
-        Payment.released_at >= one_week_ago
-    ).all()
-    weekly_earnings = sum(p.runner_earnings for p in weekly_payments)
-    
-    # Count completed errands
     completed_errands = [e for e in accepted_errands if e.status == 'Completed']
+    total_earnings = sum(e.final_fee or e.proposed_fee for e in completed_errands)
+    weekly_earnings = total_earnings * 0.2
     
     return render_template('runner/dashboard_runner.html', 
                          user=user,
@@ -477,10 +459,10 @@ def create_errand():
         session.clear()
         return redirect(url_for('main.login'))
     
-    # Check if user is verified
+    # --- GLOBAL VERIFICATION WALL ---
+    # If not verified, stop here and show the unverified wall immediately
     if not user.verified and user.verification_status != 'approved':
-        flash('You need to verify your account before creating errands.', 'error')
-        return redirect(url_for('main.verification'))
+        return render_template('shared/dashboard_unverified.html', user=user)
     
     # Load all system configuration
     configs = SystemConfig.query.all()
@@ -617,7 +599,7 @@ def create_errand():
         
         # Process wallet payment if using wallet
         if use_wallet:
-            from app.wallet import create_wallet_transaction
+            from app.wallet import create_wallet_transacztion
             success, message = create_wallet_transaction(
                 user_id=session['user_id'],
                 transaction_type='payment',
@@ -784,10 +766,9 @@ def active_errands():
     """View active errands - client only"""
     user = User.query.get(session['user_id'])
     
-    # Check if user is verified
+    # --- GLOBAL VERIFICATION WALL ---
     if not user.verified and user.verification_status != 'approved':
-        flash('You need to verify your account to view active errands.', 'error')
-        return redirect(url_for('main.verification'))
+        return render_template('shared/dashboard_unverified.html', user=user)
     
     active_errands = Errand.query.filter_by(
         client_id=session['user_id']
@@ -806,10 +787,9 @@ def errand_history():
     """View errand history - client only"""
     user = User.query.get(session['user_id'])
     
-    # Check if user is verified
+    # --- GLOBAL VERIFICATION WALL ---
     if not user.verified and user.verification_status != 'approved':
-        flash('You need to verify your account to view errand history.', 'error')
-        return redirect(url_for('main.verification'))
+        return render_template('shared/dashboard_unverified.html', user=user)
     
     completed_errands = Errand.query.filter_by(
         client_id=session['user_id'],
@@ -858,10 +838,10 @@ def available_errands_runner():
     """View available errands - runner only"""
     user = User.query.get(session['user_id'])
     
-    # Check if user is verified
+    # --- GLOBAL VERIFICATION WALL ---
+    # If not verified, stop here and show the unverified wall immediately
     if not user.verified and user.verification_status != 'approved':
-        flash('You need to verify your account to view available errands.', 'error')
-        return redirect(url_for('main.verification'))
+        return render_template('shared/dashboard_unverified.html', user=user)
     
     available_errands = Errand.query.filter_by(status='Pending').order_by(Errand.created_at.desc()).all()
     
@@ -876,10 +856,9 @@ def my_errands_runner():
     """View accepted errands - runner only"""
     user = User.query.get(session['user_id'])
     
-    # Check if user is verified
+    # --- GLOBAL VERIFICATION WALL ---
     if not user.verified and user.verification_status != 'approved':
-        flash('You need to verify your account to view your errands.', 'error')
-        return redirect(url_for('main.verification'))
+        return render_template('shared/dashboard_unverified.html', user=user)
     
     accepted_errands = Errand.query.filter_by(runner_id=session['user_id']).order_by(Errand.created_at.desc()).all()
     
@@ -895,38 +874,14 @@ def earnings_runner():
     
     # Check if user is verified
     if not user.verified and user.verification_status != 'approved':
-        flash('You need to verify your account to view earnings.', 'error')
-        return redirect(url_for('main.verification'))
+        return render_template('shared/dashboard_unverified.html', user=user)
     
-    # FIX: Get runner payments instead of errands
-    runner_payments = Payment.query.filter_by(
-        runner_id=session['user_id'],
-        payment_status='released'
-    ).all()
-    
-    # Calculate actual earnings from payments
-    total_earnings = sum(p.runner_earnings for p in runner_payments)
-    
-    # Calculate weekly earnings (last 7 days)
-    one_week_ago = datetime.utcnow() - timedelta(days=7)
-    weekly_payments = Payment.query.filter(
-        Payment.runner_id == session['user_id'],
-        Payment.payment_status == 'released',
-        Payment.released_at >= one_week_ago
-    ).all()
-    weekly_earnings = sum(p.runner_earnings for p in weekly_payments)
-    
-    # Get completed errands for count
-    completed_errands = Errand.query.filter_by(
-        runner_id=session['user_id'],
-        status='Completed'
-    ).all()
-    
-    # Calculate average earning
-    average_earning = total_earnings / len(runner_payments) if runner_payments else 0
-    
-    # Get accepted errands for display
     accepted_errands = Errand.query.filter_by(runner_id=session['user_id']).all()
+    
+    completed_errands = [e for e in accepted_errands if e.status == 'Completed']
+    total_earnings = sum(e.final_fee or e.proposed_fee for e in completed_errands)
+    weekly_earnings = total_earnings * 0.2
+    average_earning = total_earnings / len(completed_errands) if completed_errands else 0
     
     return render_template('runner/earnings_runner.html', 
                         user=user,
@@ -953,12 +908,7 @@ def runner_errand_history():
     in_progress_errands = [e for e in all_errands if e.status in ['Accepted', 'In Progress']]
     canceled_errands = [e for e in all_errands if e.status == 'Canceled']
     
-    # FIX: Calculate total earnings from payments, not errand fees
-    runner_payments = Payment.query.filter_by(
-        runner_id=session['user_id'],
-        payment_status='released'
-    ).all()
-    total_earnings = sum(p.runner_earnings for p in runner_payments)
+    total_earnings = sum(e.final_fee or e.proposed_fee for e in completed_errands)
     
     return render_template('runner/errand_history.html', 
                         user=user,
