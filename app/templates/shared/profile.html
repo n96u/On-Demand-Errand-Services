@@ -185,6 +185,46 @@
         gap: 1rem;
         margin-top: 1.5rem;
     }
+    
+    /* Reviews Section Styles */
+    .review-item {
+        background: var(--background);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border);
+    }
+    
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .review-stars {
+        color: #fbbf24;
+        font-size: 0.9rem;
+    }
+    
+    .review-date {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    
+    .review-text {
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        font-style: italic;
+        line-height: 1.5;
+        margin-bottom: 0.5rem;
+    }
+    
+    .review-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-align: right;
+    }
 
     @media (max-width: 768px) {
         .profile-header {
@@ -211,7 +251,6 @@
 </style>
 
 <div class="profile-container">
-    <!-- Profile Header -->
     <div class="profile-header">
         <div class="profile-avatar">
             {{ user.username[0]|upper }}
@@ -226,12 +265,19 @@
             <div class="profile-badges">
                 <span class="badge badge-primary">Member since {{ user.created_at.strftime('%b %Y') }}</span>
                 <span class="badge badge-success">Active</span>
+                
+                {% if user.role == 'runner' %}
+                <span class="badge badge-warning" style="background-color: #fffbeb; color: #b45309; border: 1px solid #fcd34d;">
+                    <i class="fas fa-star" style="color: #fbbf24;"></i> 
+                    {{ "%.1f"|format(user.average_rating|default(0.0)) }} 
+                    ({{ user.rating_count|default(0) }})
+                </span>
+                {% endif %}
             </div>
         </div>
     </div>
 
     <div class="grid grid-cols-2" style="gap: 2rem;">
-        <!-- Personal Information -->
         <div class="form-section">
             <h3 class="section-title">Personal Information</h3>
             <form method="post">
@@ -271,9 +317,11 @@
                     <div class="form-group">
                         <label class="form-label">Barangay</label>
                         <select name="barangay" class="form-control" required>
-                            <option value="">Select your barangay</option>
-                            {% for barangay in barangays %}
-                            <option value="{{ barangay }}" {% if user.barangay == barangay %}selected{% endif %}>{{ barangay }}</option>
+                            <option value="">Select Municipality</option>
+                            {% for municipality in municipalities %}
+                                <option value="{{ municipality }}" {% if user.barangay == municipality %}selected{% endif %}>
+                                    {{ municipality }}
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -284,6 +332,22 @@
                     <textarea name="address" class="form-control" rows="3" placeholder="Your complete address">{{ user.address or '' }}</textarea>
                 </div>
 
+                {% if user.role == 'runner' %}
+                <div class="form-group" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                    <label class="form-label">Vehicle Type</label>
+                    <select name="vehicle_type" class="form-control">
+                        <option value="motorcycle" {% if user.vehicle_type == 'motorcycle' %}selected{% endif %}>Motorcycle</option>
+                        <option value="bicycle" {% if user.vehicle_type == 'bicycle' %}selected{% endif %}>Bicycle</option>
+                        <option value="car" {% if user.vehicle_type == 'car' %}selected{% endif %}>Car/Van</option>
+                        <option value="none" {% if user.vehicle_type == 'none' %}selected{% endif %}>None (Commute/Walk)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Bio / Notes for Clients</label>
+                    <textarea name="bio" class="form-control" rows="3" placeholder="Tell clients about yourself (e.g., 'Fast delivery, careful handling')">{{ user.bio or '' }}</textarea>
+                </div>
+                {% endif %}
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" style="flex: 1;">
                         <i class="fas fa-save mr-2"></i>
@@ -293,54 +357,111 @@
             </form>
         </div>
 
-        <!-- Account Settings -->
         <div style="display: flex; flex-direction: column; gap: 2rem;">
-            <!-- Change Password -->
+            
             <div class="form-section">
-                <h3 class="section-title">Change Password</h3>
-                <form method="post" action="{{ url_for('main.change_password') }}" id="changePasswordForm">
-                    <div class="form-group">
-                        <label class="form-label">Current Password</label>
-                        <div class="input-group">
-                            <i class="input-icon fas fa-lock"></i>
-                            <input type="password" name="current_password" id="current_password" class="form-control with-icon" required>
+                <h3 class="section-title">Account Statistics</h3>
+                <div class="stats-grid-profile">
+                    
+                    {% if user.role == 'runner' %}
+                    <div class="stat-item-profile">
+                        <div class="stat-value-profile" style="color: #fbbf24;">
+                            {{ "%.1f"|format(user.average_rating|default(0.0)) }}
                         </div>
-                        <small class="error-message" id="currentPasswordError" style="display: none; color: var(--error); font-size: 0.875rem;"></small>
+                        <div class="stat-label-profile">
+                            Average Rating
+                            <div style="font-size: 0.8rem; margin-top: 0.2rem;">
+                                {% for i in range(1, 6) %}
+                                    <i class="{{ 'fas' if i <= (user.average_rating|default(0)|round|int) else 'far' }} fa-star" style="color: #fbbf24;"></i>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-item-profile">
+                        <div class="stat-value-profile">{{ user.rating_count|default(0) }}</div>
+                        <div class="stat-label-profile">Total Reviews</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="stat-item-profile">
+                        <div class="stat-value-profile">{{ user.role|title }}</div>
+                        <div class="stat-label-profile">Account Role</div>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">New Password</label>
-                            <div class="input-group">
-                                <i class="input-icon fas fa-lock"></i>
-                                <input type="password" name="new_password" id="new_password" class="form-control with-icon" required minlength="6">
+                    <div class="stat-item-profile">
+                        {% if user.role == 'admin' %}
+                            <div class="stat-value-profile">Admin</div>
+                            <div class="stat-label-profile">Account Type</div>
+                        {% else %}
+                            <div class="stat-value-profile">
+                                {% if user.verification_status == 'approved' %}
+                                    <span style="color: var(--success);">Verified</span>
+                                {% elif user.verification_status == 'pending' %}
+                                    <span style="color: var(--warning);">Pending</span>
+                                {% elif user.verification_status == 'rejected' %}
+                                    <span style="color: var(--error);">Rejected</span>
+                                {% else %}
+                                    <span style="color: var(--text-muted);">Not Verified</span>
+                                {% endif %}
                             </div>
-                            <small class="error-message" id="newPasswordError" style="display: none; color: var(--error); font-size: 0.875rem;"></small>
-                            <small class="form-text text-muted" style="display: block; margin-top: 0.25rem; font-size: 0.8rem;">
-                                Password must be at least 6 characters long.
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Confirm New Password</label>
-                            <div class="input-group">
-                                <i class="input-icon fas fa-lock"></i>
-                                <input type="password" name="confirm_password" id="confirm_password" class="form-control with-icon" required minlength="6">
-                            </div>
-                            <small class="error-message" id="confirmPasswordError" style="display: none; color: var(--error); font-size: 0.875rem;"></small>
-                        </div>
+                            <div class="stat-label-profile">Verification</div>
+                        {% endif %}
                     </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-warning" id="passwordSubmitBtn" style="flex: 1;">
-                            <i class="fas fa-key mr-2"></i>
-                            Change Password
-                        </button>
+                </div>
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="color: var(--text-muted);">Account Status</span>
+                        <span class="badge badge-success">Active</span>
                     </div>
-                </form>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text-muted);">Member Since</span>
+                        <span class="badge badge-secondary">{{ user.created_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Verification Status Section -->
+            {% if user.role == 'runner' %}
+            <div class="form-section">
+                <h3 class="section-title">Recent Feedback</h3>
+                {% if user.received_ratings %}
+                    <div class="reviews-container">
+                        {% for rating in user.received_ratings|sort(attribute='created_at', reverse=True) %}
+                            {% if loop.index <= 3 %}
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <div class="review-stars">
+                                        {% for i in range(1, 6) %}
+                                            <i class="{{ 'fas' if i <= rating.score else 'far' }} fa-star"></i>
+                                        {% endfor %}
+                                        <span style="font-weight: bold; margin-left: 5px; color: var(--text-primary);">{{ rating.score }}.0</span>
+                                    </div>
+                                    <div class="review-date">{{ rating.created_at.strftime('%b %d, %Y') }}</div>
+                                </div>
+                                {% if rating.comment %}
+                                    <p class="review-text">"{{ rating.comment }}"</p>
+                                {% else %}
+                                    <p class="review-text" style="opacity: 0.6;">(No comment provided)</p>
+                                {% endif %}
+                                <div class="review-meta">Errand #{{ rating.errand_id }}</div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if user.received_ratings|length > 3 %}
+                            <div style="text-align: center; margin-top: 1rem;">
+                                <small style="color: var(--text-muted);">Showing recent 3 of {{ user.received_ratings|length }} reviews</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <i class="far fa-star" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                        <p>No feedback received yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
             {% if user.role != 'admin' %}
             <div class="form-section">
                 <h3 class="section-title">Account Verification</h3>
@@ -428,50 +549,51 @@
             </div>
             {% endif %}
 
-            <!-- Account Statistics -->
             <div class="form-section">
-                <h3 class="section-title">Account Statistics</h3>
-                <div class="stats-grid-profile">
-                    <!-- First Stat: User Role -->
-                    <div class="stat-item-profile">
-                        <div class="stat-value-profile">{{ user.role|title }}</div>
-                        <div class="stat-label-profile">Account Role</div>
+                <h3 class="section-title">Change Password</h3>
+                <form method="post" action="{{ url_for('main.change_password') }}" id="changePasswordForm">
+                    <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <div class="input-group">
+                            <i class="input-icon fas fa-lock"></i>
+                            <input type="password" name="current_password" id="current_password" class="form-control with-icon" required>
+                        </div>
+                        <small class="error-message" id="currentPasswordError" style="display: none; color: var(--error); font-size: 0.875rem;"></small>
                     </div>
                     
-                    <!-- Second Stat: Verification Status or Join Date -->
-                    <div class="stat-item-profile">
-                        {% if user.role == 'admin' %}
-                            <div class="stat-value-profile">Admin</div>
-                            <div class="stat-label-profile">Account Type</div>
-                        {% else %}
-                            <div class="stat-value-profile">
-                                {% if user.verification_status == 'approved' %}
-                                    <span style="color: var(--success);">Verified</span>
-                                {% elif user.verification_status == 'pending' %}
-                                    <span style="color: var(--warning);">Pending</span>
-                                {% elif user.verification_status == 'rejected' %}
-                                    <span style="color: var(--error);">Rejected</span>
-                                {% else %}
-                                    <span style="color: var(--text-muted);">Not Verified</span>
-                                {% endif %}
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">New Password</label>
+                            <div class="input-group">
+                                <i class="input-icon fas fa-lock"></i>
+                                <input type="password" name="new_password" id="new_password" class="form-control with-icon" required minlength="6">
                             </div>
-                            <div class="stat-label-profile">Verification</div>
-                        {% endif %}
+                            <small class="error-message" id="newPasswordError" style="display: none; color: var(--error); font-size: 0.875rem;"></small>
+                            <small class="form-text text-muted" style="display: block; margin-top: 0.25rem; font-size: 0.8rem;">
+                                Password must be at least 6 characters long.
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Confirm New Password</label>
+                            <div class="input-group">
+                                <i class="input-icon fas fa-lock"></i>
+                                <input type="password" name="confirm_password" id="confirm_password" class="form-control with-icon" required minlength="6">
+                            </div>
+                            <small class="error-message" id="confirmPasswordError" style="display: none; color: var(--error); font-size: 0.875rem;"></small>
+                        </div>
                     </div>
-                </div>
-                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span style="color: var(--text-muted);">Account Status</span>
-                        <span class="badge badge-success">Active</span>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-warning" id="passwordSubmitBtn" style="flex: 1;">
+                            <i class="fas fa-key mr-2"></i>
+                            Change Password
+                        </button>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: var(--text-muted);">Member Since</span>
-                        <span class="badge badge-secondary">{{ user.created_at.strftime('%b %d, %Y') }}</span>
-                    </div>
-                </div>
+                </form>
             </div>
+
         </div>
     </div>
 </div>
 {% endblock %}
-[file content end]

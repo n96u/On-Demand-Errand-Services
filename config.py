@@ -5,6 +5,7 @@ class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-here-change-this-in-production'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///grabitdone.db'
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # File upload settings
@@ -32,7 +33,8 @@ class ProductionConfig(Config):
     TESTING = False
     # In production, use environment variables
     SECRET_KEY = os.environ.get('SECRET_KEY')
-    SESSION_COOKIE_SECURE = True  # Only send cookies over HTTPS
+    GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY')
+    SESSION_COOKIE_SECURE = True 
 
 
 class TestingConfig(Config):

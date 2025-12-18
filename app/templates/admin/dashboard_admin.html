@@ -358,6 +358,52 @@
     </div>
 </div>
 
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">
+        <h2 class="card-title">Recent Ratings & Feedback</h2>
+    </div>
+    <div class="card-body">
+        {% if recent_ratings %}
+        <div class="activity-list">
+            {% for rating in recent_ratings %}
+            <div class="activity-item">
+                <div style="width: 40px; height: 40px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 1rem; color: var(--primary);">
+                    <i class="fas fa-star"></i>
+                </div>
+                
+                <div class="activity-content">
+                    <div class="activity-title">
+                        <span style="font-weight: 700;">{{ rating.rated_runner.username }}</span> was rated 
+                        <span style="color: #fbbf24; font-weight: bold;">
+                            {{ rating.score }} <i class="fas fa-star" style="font-size: 0.8rem;"></i>
+                        </span>
+                    </div>
+                    <div style="font-size: 0.9rem; margin-top: 0.2rem;">
+                        {% if rating.comment %}
+                            "{{ rating.comment }}"
+                        {% else %}
+                            <em style="color: var(--text-muted);">No comment provided</em>
+                        {% endif %}
+                    </div>
+                    <div class="activity-meta">
+                        by {{ rating.rating_author.username }} • Errand #{{ rating.errand_id }} • {{ rating.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="far fa-star"></i>
+            </div>
+            <h3 class="empty-state-title">No Ratings Yet</h3>
+            <p class="empty-state-description">Ratings will appear here once clients provide feedback.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
 <!-- Recent Activity -->
 <div class="card">
     <div class="card-header">

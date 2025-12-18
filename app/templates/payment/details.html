@@ -123,7 +123,7 @@
             <div class="payment-summary">
                 <h3 style="margin-top: 0;">Transaction #{{ payment.transaction_id }}</h3>
                 <div style="font-size: 2rem; font-weight: 800; color: var(--primary);">
-                    ₱{{ "%.2f"|format(payment.amount) }}
+                    ₱{{ "%.2f"|format(payment.amount + payment.vat_amount) }}
                 </div>
                 <div style="color: var(--text-muted); margin-top: 0.5rem;">
                     {{ payment.created_at.strftime('%B %d, %Y at %I:%M %p') }}

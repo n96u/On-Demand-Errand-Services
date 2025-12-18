@@ -700,11 +700,13 @@
                                 Start
                             </a>
                         {% elif errand.status == 'In Progress' %}
-                            <a href="{{ url_for('main.complete_errand', errand_id=errand.id) }}" 
-                            class="btn btn-success btn-sm"
-                            onclick="return confirm('Complete errand #{{ errand.id }} and receive payment?')">
-                                Complete
-                            </a>
+                            <form action="{{ url_for('main.complete_errand', errand_id=errand.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-success btn-sm" 
+                                        style="cursor: pointer; border: none; font-family: inherit; font-size: 0.8rem;"
+                                        onclick="return confirm('Complete errand #{{ errand.id }} and receive payment?')">
+                                    Complete
+                                </button>
+                            </form>
                         {% endif %}
                         
                         {% if errand.status in ['Accepted', 'In Progress'] %}

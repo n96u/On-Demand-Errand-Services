@@ -4,7 +4,6 @@
 {% block header_title %}Runner Dashboard{% endblock %}
 
 {% block sidebar %}
-<!-- Runner Sidebar -->
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <a href="{{ url_for('main.dashboard') }}" class="sidebar-brand">
@@ -267,6 +266,55 @@
         font-size: 1.25rem;
     }
 
+    /* Styles for Reviews */
+    .review-list {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .review-item {
+        background: var(--surface);
+        padding: 1rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        transition: var(--transition);
+    }
+
+    .review-item:hover {
+        box-shadow: var(--shadow-sm);
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .review-stars {
+        color: #fbbf24;
+        font-size: 0.9rem;
+    }
+
+    .review-date {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .review-comment {
+        font-style: italic;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .review-author {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        text-align: right;
+    }
+
     @media (max-width: 1024px) {
         .earnings-breakdown {
             grid-template-columns: 1fr;
@@ -289,7 +337,6 @@
 </style>
 
 <div class="dashboard-content">
-    <!-- Stats Grid -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-icon">
@@ -317,13 +364,13 @@
 
         <div class="stat-card">
             <div class="stat-icon">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="stat-value">{{ completed_count }}</div>
-            <div class="stat-label">Completed</div>
-            <div class="stat-change positive">
                 <i class="fas fa-star"></i>
-                {{ ((completed_count / (accepted_errands|length)) * 100)|round(1) if accepted_errands|length > 0 else 0 }}% rate
+            </div>
+            <div class="stat-value">{{ "%.1f"|format(user.average_rating) }}</div>
+            <div class="stat-label">Avg. Rating</div>
+            <div class="stat-change positive">
+                <i class="fas fa-user-check"></i>
+                {{ user.rating_count }} reviews
             </div>
         </div>
 
@@ -354,7 +401,6 @@
         </div>
     </div>
 
-    <!-- Earnings Breakdown -->
     <div class="earnings-breakdown">
         <div class="earnings-chart">
             <h3 style="margin-bottom: 1.5rem;">Earnings Overview</h3>
@@ -388,7 +434,6 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
     <div class="quick-actions-grid">
         <a href="{{ url_for('main.available_errands_runner') }}" class="quick-action-card">
             <div class="quick-action-icon">
@@ -423,7 +468,49 @@
         </a>
     </div>
 
-    <!-- Recent Activity -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+            <h2 class="card-title">Recent Feedback</h2>
+        </div>
+        <div class="card-body">
+            {% if user.received_ratings %}
+                <div class="review-list">
+                    {% for rating in user.received_ratings|sort(attribute='created_at', reverse=True)|batch(5)|first %}
+                    <div class="review-item">
+                        <div class="review-header">
+                            <div class="review-stars">
+                                {% for i in range(1, 6) %}
+                                    <i class="{{ 'fas' if i <= rating.score else 'far' }} fa-star"></i>
+                                {% endfor %}
+                                <span style="margin-left: 0.5rem; color: var(--text-primary); font-weight: bold;">{{ rating.score }}.0</span>
+                            </div>
+                            <span class="review-date">{{ rating.created_at.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        <div class="review-comment">
+                            {% if rating.comment %}
+                                "{{ rating.comment }}"
+                            {% else %}
+                                <em class="text-muted">No comment provided</em>
+                            {% endif %}
+                        </div>
+                        <div class="review-author">
+                            - {{ rating.rating_author.username }} (Errand #{{ rating.errand_id }})
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="far fa-star"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Reviews Yet</h3>
+                    <p class="empty-state-description">Complete errands to receive ratings and feedback from clients!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-header">
             <h2 class="card-title">Recent Activity</h2>

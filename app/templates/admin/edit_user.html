@@ -233,12 +233,9 @@
                 
                 <div class="form-group">
                     <label for="barangay" class="form-label">Barangay</label>
-                    <select id="barangay" name="barangay" class="form-control" required>
-                        <option value="">Select Barangay</option>
-                        {% for barangay in barangays %}
-                            <option value="{{ barangay }}" {% if edit_user.barangay == barangay %}selected{% endif %}>
-                                {{ barangay }}
-                            </option>
+                    <select name="barangay" class="form-control" required>
+                        {% for m in municipalities %}
+                            <option value="{{ m }}" {% if edit_user.barangay == m %}selected{% endif %}>{{ m }}</option>
                         {% endfor %}
                     </select>
                 </div>

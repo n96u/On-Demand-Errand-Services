@@ -1,23 +1,24 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, send_file, current_app
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from functools import wraps
+import json
 import os
 from app import db
 import hashlib
 import uuid
-from app.models import User, Errand, Notification, SystemConfig, Wallet, WalletTransaction, Payment, PaymentMethod
+from app.models import User, Errand, Notification, SystemConfig, Wallet, WalletTransaction, Payment, PaymentMethod, Rating
 from app.wallet import (calculate_fees, create_wallet_transaction, 
                         process_errand_payment, process_refund, generate_transaction_id)
 from app.password_reset import (create_password_reset_token, send_password_reset_email, 
                                 validate_reset_token, mark_token_used)
-
+import googlemaps
 
 
 bp = Blueprint('main', __name__)
 
 # ===== CONSTANTS =====
-BARANGAYS = ['Barangay 1', 'Barangay 2', 'Barangay 3', 'Barangay 4', 'Barangay 5']
+BARANGAYS = ['Lipa City', 'Sto. Tomas', 'Tanuan', 'Rosario', 'Padre Garcia']
 
 
 # ===== HELPER FUNCTIONS =====
@@ -253,6 +254,57 @@ def utility_processor():
         get_errand_display_status=get_errand_display_status 
     )
 
+@bp.context_processor
+def inject_system_config():
+    """
+    Make system configuration variables available to ALL templates globally.
+    Usage in HTML: {{ system_config.foodDeliveryFee }}
+    """
+    config_dict = {}
+    try:
+        # 1. Fetch all configurations from the database
+        configs = SystemConfig.query.all()
+        
+        # 2. Convert to dictionary
+        for c in configs:
+            # Try to convert numbers to floats so math works in Jinja2/JS
+            try:
+                config_dict[c.key] = float(c.value)
+            except ValueError:
+                config_dict[c.key] = c.value
+
+        # 3. Define Defaults (Fail-safe if DB is empty)
+        defaults = {
+            'foodDeliveryFee': 100.00,
+            'groceryFee': 150.00,
+            'packageFee': 80.00,
+            'documentFee': 120.00,
+            'otherErrandFee': 100.00,
+            'baseDeliveryFee': 50.00,
+            'perKmRate': 15.00,
+            'vatRate': 12.00,
+            'platformCommission': 10.00,
+            'defaultDistance': 5.0,
+            # Distance Matrix Defaults
+            'barangay1Distance': 2.5,
+            'barangay2Distance': 5.0,
+            'barangay3Distance': 7.5,
+            'barangay4Distance': 10.0,
+            'barangay5Distance': 12.5,
+        }
+
+        # 4. Merge defaults for any missing keys
+        for key, value in defaults.items():
+            if key not in config_dict:
+                config_dict[key] = value
+
+    except Exception as e:
+        # Log error but don't crash the app
+        print(f"Error injecting system config: {e}")
+        return dict(system_config={})
+
+    return dict(system_config=config_dict)
+
 # ===== BASIC ROUTES =====
 @bp.route('/')
 def index():
@@ -408,24 +460,113 @@ def runner_dashboard(user):
     """Runner-specific dashboard"""
     # Check if user is verified
     if not user.verified and user.verification_status != 'approved':
-        # Show limited dashboard with verification prompt
-        return render_template('shared/dashboard_unverified.html', 
-                             user=user)
+        return render_template('shared/dashboard_unverified.html', user=user)
     
     available_errands = Errand.query.filter_by(status='Pending').all()
     accepted_errands = Errand.query.filter_by(runner_id=session['user_id']).all()
     
     completed_errands = [e for e in accepted_errands if e.status == 'Completed']
-    total_earnings = sum(e.final_fee or e.proposed_fee for e in completed_errands)
-    weekly_earnings = total_earnings * 0.2
     
-    return render_template('runner/dashboard_runner.html', 
+    # Fix: Calculate total earnings based on runner_earnings, not final_fee (which includes VAT/Platform fee)
+    total_earnings = 0.0
+    for e in completed_errands:
+        if e.payment:
+            total_earnings += e.payment.runner_earnings
+        else:
+            # Fallback estimation
+            if e.final_fee:
+
+                total_earnings += (e.final_fee / 1.12) * 0.9
+            elif e.proposed_fee:
+                total_earnings += e.proposed_fee * 0.9
+
+    from datetime import datetime, timedelta
+    one_week_ago = datetime.utcnow() - timedelta(days=7)
+    weekly_earnings = 0.0
+    for e in completed_errands:
+        if e.completed_at and e.completed_at >= one_week_ago:
+            if e.payment:
+                weekly_earnings += e.payment.runner_earnings
+            else:
+                if e.final_fee:
+                    weekly_earnings += (e.final_fee / 1.12) * 0.9
+                elif e.proposed_fee:
+                    weekly_earnings += e.proposed_fee * 0.9
+    
+    return render_template('runner/dashboard_runner.html',
                          user=user,
                          available_errands=available_errands,
                          accepted_errands=accepted_errands,
                          total_earnings=total_earnings,
                          weekly_earnings=weekly_earnings,
                          completed_count=len(completed_errands))
+
+
+@bp.route('/submit-rating/<int:errand_id>', methods=['POST'])
+@login_required('client')
+def submit_rating(errand_id):
+    """Submit a rating for a completed errand"""
+    errand = Errand.query.get_or_404(errand_id)
+    user = User.query.get(session['user_id'])
+    
+    # Validation
+    if errand.client_id != user.id:
+        flash('You can only rate errands you created.', 'error')
+        return redirect(url_for('main.dashboard'))
+        
+    if errand.status != 'Completed':
+        flash('You can only rate completed errands.', 'error')
+        return redirect(url_for('main.view_errand', errand_id=errand_id))
+        
+    if not errand.runner_id:
+        flash('Cannot rate an errand without a runner.', 'error')
+        return redirect(url_for('main.view_errand', errand_id=errand_id))
+        
+    # Check if already rated
+    if Rating.query.filter_by(errand_id=errand_id).first():
+        flash('You have already rated this errand.', 'warning')
+        return redirect(url_for('main.view_errand', errand_id=errand_id))
+        
+    try:
+        score = int(request.form.get('score'))
+        comment = request.form.get('comment')
+        
+        if score < 1 or score > 5:
+            raise ValueError("Score must be between 1 and 5")
+            
+        # Create Rating
+        rating = Rating(
+            errand_id=errand.id,
+            client_id=user.id,
+            runner_id=errand.runner_id,
+            score=score,
+            comment=comment
+        )
+        db.session.add(rating)
+        
+        # Update Runner's Average
+        runner = User.query.get(errand.runner_id)
+        
+        # Calculate new average
+        # (Old Total + New Score) / (Old Count + 1)
+        current_total = runner.average_rating * runner.rating_count
+        runner.rating_count += 1
+        runner.average_rating = (current_total + score) / runner.rating_count
+        
+        # Create Notification for Runner
+        create_notification(
+            runner.id, 
+            f'You received a {score}-star rating for errand #{errand.id}!'
+        )
+        
+        db.session.commit()
+        flash('Rating submitted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error submitting rating: {str(e)}', 'error')
+        
+    return redirect(url_for('main.view_errand', errand_id=errand_id))
 
 
 def admin_dashboard(user):
@@ -438,6 +579,8 @@ def admin_dashboard(user):
     users = User.query.all()
     errands = Errand.query.all()
     
+    recent_ratings = Rating.query.order_by(Rating.created_at.desc()).limit(5).all()
+    
     return render_template('admin/dashboard_admin.html',
                          user=user,
                          total_users=total_users,
@@ -445,13 +588,13 @@ def admin_dashboard(user):
                          active_errands=active_errands,
                          today_errands=today_errands,
                          users=users,
-                         errands=errands)
+                         errands=errands,
+                         recent_ratings=recent_ratings)
 
 # ===== CLIENT ROUTES =====
 @bp.route('/create-errand', methods=['GET', 'POST'])
 @login_required('client')
 def create_errand():
-    """Create new errand - client only with payment integration"""
     user = User.query.get(session['user_id'])
     
     if not user:
@@ -460,54 +603,48 @@ def create_errand():
         return redirect(url_for('main.login'))
     
     # --- GLOBAL VERIFICATION WALL ---
-    # If not verified, stop here and show the unverified wall immediately
     if not user.verified and user.verification_status != 'approved':
         return render_template('shared/dashboard_unverified.html', user=user)
     
-    # Load all system configuration
+    # Load all system configuration from DB
     configs = SystemConfig.query.all()
     config_dict = {config.key: config.value for config in configs}
     
-    # Load categories with prices from system config
-    categories = {}
-    category_mapping = {
-        'foodDeliveryFee': 'Food Delivery',
-        'groceryFee': 'Grocery Shopping',
-        'packageFee': 'Package Pickup',
-        'documentFee': 'Document Processing',
-        'otherErrandFee': 'Other Errands'
-    }
-    
-    # Convert config values to float for calculations
-    config_floats = {}
-    for key, value in config_dict.items():
+    # Helper to safely get float values
+    def get_float_config(key, default):
         try:
-            config_floats[key] = float(value)
-        except (ValueError, TypeError):
-            # Use defaults if conversion fails
-            defaults = {
-                'foodDeliveryFee': 100.00,
-                'groceryFee': 150.00,
-                'packageFee': 80.00,
-                'documentFee': 120.00,
-                'otherErrandFee': 100.00,
-                'minServiceFee': 50.00,
-                'platformCommission': 10.00,
-                'vatRate': 12.00,
-                'baseDeliveryFee': 50.00,
-                'perKmRate': 15.00,
-                'maxDistance': 20.0,
-                'barangay1Distance': 2.5,
-                'barangay2Distance': 5.0,
-                'barangay3Distance': 7.5,
-                'barangay4Distance': 10.0,
-                'barangay5Distance': 12.5,
-                'defaultDistance': 5.0,
-            }
-            config_floats[key] = defaults.get(key, 0.0)
-    
-    for key, category_name in category_mapping.items():
-        categories[category_name] = config_floats.get(key, 100.00)
+            return float(config_dict.get(key, default))
+        except:
+            return default
+
+    # Prepare configuration values
+    pricing_config = {
+        'foodDeliveryFee': get_float_config('foodDeliveryFee', 100.00),
+        'groceryFee': get_float_config('groceryFee', 150.00),
+        'packageFee': get_float_config('packageFee', 80.00),
+        'documentFee': get_float_config('documentFee', 120.00),
+        'otherErrandFee': get_float_config('otherErrandFee', 100.00),
+        'baseDeliveryFee': get_float_config('baseDeliveryFee', 50.00),
+        'perKmRate': get_float_config('perKmRate', 15.00),
+        'vatRate': get_float_config('vatRate', 12.00),
+        'platformCommission': get_float_config('platformCommission', 10.00),
+        # Distance matrix defaults
+        'defaultDistance': get_float_config('defaultDistance', 5.0),
+        'barangay1Distance': get_float_config('barangay1Distance', 2.5),
+        'barangay2Distance': get_float_config('barangay2Distance', 5.0),
+        'barangay3Distance': get_float_config('barangay3Distance', 7.5),
+        'barangay4Distance': get_float_config('barangay4Distance', 10.0),
+        'barangay5Distance': get_float_config('barangay5Distance', 12.5),
+    }
+
+    # Map categories to pricing keys
+    categories = {
+        'Food Delivery': pricing_config['foodDeliveryFee'],
+        'Grocery Shopping': pricing_config['groceryFee'],
+        'Package Pickup': pricing_config['packageFee'],
+        'Document Processing': pricing_config['documentFee'],
+        'Other Errands': pricing_config['otherErrandFee']
+    }
     
     if request.method == 'POST':
         category = request.form['category']
@@ -519,38 +656,33 @@ def create_errand():
         payment_method = request.form.get('payment_method', 'wallet')
         use_wallet = request.form.get('use_wallet') == 'on'
         
-        # Get base price from categories
+        # 1. Calculate Base Price
         base_price = categories.get(category, 100.00)
         
-        # Calculate distance-based delivery fee
-        distance_key = f"{barangay.lower().replace(' ', '')}Distance"
-        distance = config_floats.get(distance_key, config_floats.get('defaultDistance', 5.0))
+        # 2. Calculate Distance & Delivery Fee
+        # Simple mapping for now based on barangay name
+        dist_key = 'defaultDistance'
+        if 'Barangay 1' in barangay: dist_key = 'barangay1Distance'
+        elif 'Barangay 2' in barangay: dist_key = 'barangay2Distance'
+        elif 'Barangay 3' in barangay: dist_key = 'barangay3Distance'
+        elif 'Barangay 4' in barangay: dist_key = 'barangay4Distance'
+        elif 'Barangay 5' in barangay: dist_key = 'barangay5Distance'
         
-        # Calculate fees
-        base_delivery_fee = config_floats.get('baseDeliveryFee', 50.00)
-        per_km_rate = config_floats.get('perKmRate', 15.00)
-        delivery_fee = base_delivery_fee + (distance * per_km_rate)
+        distance = pricing_config.get(dist_key, 5.0)
+        delivery_fee = pricing_config['baseDeliveryFee'] + (distance * pricing_config['perKmRate'])
         
-        # Calculate subtotal
+        # 3. Calculate Subtotal
         subtotal = base_price + delivery_fee
         
-        # Calculate tax (VAT)
-        vat_rate = config_floats.get('vatRate', 12.00) / 100
-        vat_amount = subtotal * vat_rate
+        # 4. Calculate Fees using central wallet logic
+        from app.wallet import calculate_fees
+        fees = calculate_fees(subtotal)
         
-        # Calculate platform commission
-        platform_commission_rate = config_floats.get('platformCommission', 10.00) / 100
-        platform_fee = subtotal * platform_commission_rate
+        total_amount = fees['total_amount']
         
-        # Calculate total amount (what client pays)
-        total_amount = subtotal + vat_amount
-        
-        # Calculate runner earnings
-        runner_earnings = subtotal - platform_fee
-        
-        # Check wallet balance if using wallet
+        # Check wallet balance
         if use_wallet and user.wallet_balance < total_amount:
-            flash(f'Insufficient wallet balance (₱{user.wallet_balance:.2f}). You need ₱{total_amount:.2f}. Please add funds or use another payment method.', 'error')
+            flash(f'Insufficient wallet balance (₱{user.wallet_balance:.2f}). You need ₱{total_amount:.2f}.', 'error')
             return redirect(url_for('main.create_errand'))
         
         if preferred_time:
@@ -559,7 +691,7 @@ def create_errand():
             except:
                 preferred_time = None
         
-        # Create errand
+        # Create Errand
         new_errand = Errand(
             category=category,
             description=description,
@@ -567,43 +699,44 @@ def create_errand():
             dropoff_address=dropoff_address,
             barangay=barangay,
             preferred_time=preferred_time,
-            proposed_fee=base_price,
-            final_fee=total_amount,
+            proposed_fee=subtotal,      # Store Subtotal (Service Value)
+            final_fee=total_amount,     # Store Total (What client pays)
             client_id=session['user_id'],
             status='Pending'
         )
         
         db.session.add(new_errand)
-        db.session.flush()  # Get errand ID
+        db.session.flush()
         
-        # Create payment record
+        # Create Payment Record
+        from app.wallet import generate_transaction_id
         transaction_id = generate_transaction_id()
+        
         payment = Payment(
             transaction_id=transaction_id,
             errand_id=new_errand.id,
             client_id=session['user_id'],
-            runner_id=None,  # Will be set when runner accepts
-            amount=base_price,
-            platform_fee=platform_fee,
-            vat_amount=vat_amount,
-            runner_earnings=runner_earnings,
+            amount=fees['amount'],          # Subtotal
+            platform_fee=fees['platform_fee'],
+            vat_amount=fees['vat_amount'],
+            runner_earnings=fees['runner_earnings'],
             payment_method=payment_method,
-            payment_status='prepaid'
+            payment_status='prepaid',
+            paid_at=datetime.utcnow() if use_wallet else None
         )
         
         db.session.add(payment)
         db.session.flush()
-        
-        # Link payment to errand
         new_errand.payment_id = payment.id
         
-        # Process wallet payment if using wallet
+        # Process Wallet Transaction
         if use_wallet:
-            from app.wallet import create_wallet_transacztion
+            # 1. Deduct from Client
+            from app.wallet import create_wallet_transaction
             success, message = create_wallet_transaction(
                 user_id=session['user_id'],
                 transaction_type='payment',
-                amount=-total_amount,  # Negative for payment
+                amount=-total_amount, # Deduct Total Amount
                 description=f'Payment for errand #{new_errand.id} - {category}',
                 reference_id=transaction_id
             )
@@ -613,17 +746,13 @@ def create_errand():
                 flash(f'Payment failed: {message}', 'error')
                 return redirect(url_for('main.create_errand'))
             
-            # Update user wallet balance
-            user.wallet_balance -= total_amount
-            wallet = Wallet.query.filter_by(user_id=user.id).first()
-            if wallet:
-                wallet.balance = user.wallet_balance
-            
-            payment.paid_at = datetime.utcnow()
-        
+            # 2. Process VAT to Platform Immediately
+            from app.wallet import process_vat_transfer
+            process_vat_transfer(new_errand.id, fees['vat_amount'])
+
         db.session.commit()
         
-        # Create notifications
+        # Notifications
         admin_users = User.query.filter_by(role='admin').all()
         for admin in admin_users:
             create_notification(admin.id, f'New errand created: {category} in {barangay} for ₱{total_amount:.2f}')
@@ -633,15 +762,10 @@ def create_errand():
         flash(f'Errand created and paid successfully! Total: ₱{total_amount:.2f}', 'success')
         return redirect(url_for('main.active_errands'))
     
-    # Prepare config for template (convert float values to strings for JSON serialization)
-    config_for_template = {}
-    for key, value in config_floats.items():
-        config_for_template[key] = value
-    
     return render_template('client/create_errand.html', 
                         user=user,
                         categories=categories,
-                        config=config_for_template,
+                        config=pricing_config,
                         barangays=BARANGAYS)
 
 # ===== UPDATE ACCEPT ERRAND ROUTE =====
@@ -691,7 +815,7 @@ def accept_errand(errand_id):
     return redirect(url_for('main.my_errands_runner'))
 
 
-@bp.route('/complete-errand/<int:errand_id>')
+@bp.route('/complete-errand/<int:errand_id>', methods=['POST'])
 @login_required()
 def complete_errand(errand_id):
     """Complete errand and automatically release payment to runner"""
@@ -726,18 +850,35 @@ def complete_errand(errand_id):
     payment = None
     runner_earnings = 0.0
     
-    # AUTO-RELEASE PAYMENT TO RUNNER
+    # AUTO-RELEASE PAYMENT TO RUNNER + COMMISSION TO ADMIN
     if errand.payment_id and errand.runner_id:
         payment = Payment.query.get(errand.payment_id)
         if payment and payment.payment_status == 'prepaid':
-            from app.wallet import auto_release_payment_to_runner
-            success, message = auto_release_payment_to_runner(payment.id)
+            # 1. Credit Runner
+            runner_earnings = payment.runner_earnings
+            runner_wallet = Wallet.query.filter_by(user_id=errand.runner_id).first()
+            if not runner_wallet:
+                runner_wallet = Wallet(user_id=errand.runner_id, balance=0.0)
+                db.session.add(runner_wallet)
             
-            if success:
-                runner_earnings = payment.runner_earnings
-                flash(f'Errand completed! ₱{runner_earnings:.2f} has been automatically added to your wallet.', 'success')
-            else:
-                flash(f'Errand completed but payment release failed: {message}. Contact admin.', 'warning')
+            runner_wallet.balance += runner_earnings
+            create_wallet_transaction(
+                user_id=errand.runner_id,
+                transaction_type='credit',
+                amount=runner_earnings,
+                description=f"Earnings for Errand #{errand.id}",
+                reference_id=f"EARN_{errand.id}"
+            )
+
+            # 2. Credit Platform Commission
+            from app.wallet import process_commission_transfer
+            process_commission_transfer(errand.id, payment.platform_fee)
+            
+            # Update Payment Status
+            payment.payment_status = 'released'
+            payment.released_at = datetime.utcnow()
+            
+            flash(f'Errand completed! ₱{runner_earnings:.2f} has been automatically added to your wallet.', 'success')
     
     # Create notifications
     create_notification(errand.client_id,
@@ -877,10 +1018,31 @@ def earnings_runner():
         return render_template('shared/dashboard_unverified.html', user=user)
     
     accepted_errands = Errand.query.filter_by(runner_id=session['user_id']).all()
-    
     completed_errands = [e for e in accepted_errands if e.status == 'Completed']
-    total_earnings = sum(e.final_fee or e.proposed_fee for e in completed_errands)
-    weekly_earnings = total_earnings * 0.2
+    
+    #Calculate runner earnings
+    total_earnings = 0.0
+    weekly_earnings = 0.0
+    from datetime import datetime, timedelta
+    one_week_ago = datetime.utcnow() - timedelta(days=7)
+
+    for e in completed_errands:
+        # Determine specific earning for this errand
+        this_earning = 0.0
+        if e.payment:
+            this_earning = e.payment.runner_earnings
+        else:
+             # FIX: Correct fallback logic
+             if e.final_fee:
+                this_earning = (e.final_fee / 1.12) * 0.9
+             elif e.proposed_fee:
+                this_earning = e.proposed_fee * 0.9
+        
+        total_earnings += this_earning
+        
+        if e.completed_at and e.completed_at >= one_week_ago:
+            weekly_earnings += this_earning
+
     average_earning = total_earnings / len(completed_errands) if completed_errands else 0
     
     return render_template('runner/earnings_runner.html', 
@@ -890,6 +1052,7 @@ def earnings_runner():
                         weekly_earnings=weekly_earnings,
                         completed_count=len(completed_errands),
                         average_earning=average_earning)
+
 
 @bp.route('/runner/errand-history')
 @login_required('runner')
@@ -908,7 +1071,14 @@ def runner_errand_history():
     in_progress_errands = [e for e in all_errands if e.status in ['Accepted', 'In Progress']]
     canceled_errands = [e for e in all_errands if e.status == 'Canceled']
     
-    total_earnings = sum(e.final_fee or e.proposed_fee for e in completed_errands)
+    # Fix: Calculate total earnings based on runner cut
+    total_earnings = 0.0
+    for e in completed_errands:
+        if e.payment:
+            total_earnings += e.payment.runner_earnings
+        else:
+            fee = e.final_fee or e.proposed_fee or 0
+            total_earnings += (fee / 1.12) * 0.9
     
     return render_template('runner/errand_history.html', 
                         user=user,
@@ -1236,14 +1406,9 @@ def verification():
     if user.role == 'admin':
         flash('Administrator accounts do not require verification.', 'info')
         return redirect(url_for('main.dashboard'))
-    
-    if user.verified:
-        flash('Your account is already verified!', 'success')
-        return redirect(url_for('main.dashboard'))
-    
+
     if request.method == 'POST':
         id_document = request.files.get('id_document')
-        verification_type = request.form.get('verification_type')
         additional_info = request.form.get('additional_info')
         
         if not id_document:
@@ -1253,26 +1418,30 @@ def verification():
         upload_dir = get_upload_path(user.id)
         os.makedirs(upload_dir, exist_ok=True)
         
-        # Ensure directory exists
-        os.makedirs(upload_dir, exist_ok=True)
-        
         try:
+            import shutil
+            
+            if user.verification_status in ['rejected', 'approved', 'not_requested']:
+                archive_dir = os.path.join(upload_dir, 'archive')
+                os.makedirs(archive_dir, exist_ok=True)
+                
+                for existing_file in os.listdir(upload_dir):
+                    file_path = os.path.join(upload_dir, existing_file)
+                    
+                    # Only move files (skip directories like 'archive')
+                    if os.path.isfile(file_path) and not existing_file.startswith('.'):
+                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                        new_name = f"archived_{timestamp}_{existing_file}"
+                        shutil.move(file_path, os.path.join(archive_dir, new_name))
+            # ========================================================
+
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             original_filename = secure_filename(id_document.filename)
             filename = f"government_id_{timestamp}_{original_filename}"
             file_path = os.path.join(upload_dir, filename)
             
-            print(f"DEBUG: Saving file to: {file_path}")
-            print(f"DEBUG: Full file path: {os.path.abspath(file_path)}")
-            
             # Save the file
             id_document.save(file_path)
-            
-            # Verify file was saved
-            if os.path.exists(file_path):
-                print(f"DEBUG: File saved successfully! Size: {os.path.getsize(file_path)} bytes")
-            else:
-                print(f"DEBUG: ERROR: File was not saved!")
             
             user.verification_requested = True
             user.verification_status = 'pending'
@@ -1283,6 +1452,7 @@ def verification():
             
             db.session.commit()
             
+            # Notifications
             admin_users = User.query.filter_by(role='admin').all()
             notification_message = f'New verification request from {user.username} ({user.role})'
             if user.verification_status == 'rejected':
@@ -1296,8 +1466,6 @@ def verification():
             
         except Exception as e:
             print(f"DEBUG: Error saving verification documents: {e}")
-            import traceback
-            traceback.print_exc()
             db.session.rollback()
             flash('Error saving your documents. Please try again.', 'error')
             return redirect(url_for('main.verification'))
@@ -1986,79 +2154,94 @@ def wallet_withdraw():
 @bp.route('/admin/wallet-management')
 @login_required('admin')
 def admin_wallet_management():
-    """Unified wallet management dashboard - FOCUS ON REFUNDS ONLY"""
-    from app.models import User, Payment, WalletTransaction, Errand
+    """Unified wallet management dashboard"""
+    # Import necessary models and helper
+    from app.models import User, Payment, WalletTransaction, Errand, Wallet
+    from app.wallet import get_platform_wallet  # Ensure this is imported
     
-    # Only show pending refunds
+    # 1. Get the Platform Wallet (Central funds)
+    # This is where VAT and Commissions are credited
+    platform_wallet = get_platform_wallet()
+    platform_balance = platform_wallet.balance if platform_wallet else 0.0
+    
+    # 2. Get Platform Specific Transactions (Earnings)
+    # Filter for credits to the platform wallet (VAT, Commissions)
+    platform_earnings = []
+    if platform_wallet:
+        platform_earnings = WalletTransaction.query.filter(
+            WalletTransaction.wallet_id == platform_wallet.id,
+            WalletTransaction.transaction_type == 'credit'
+        ).order_by(WalletTransaction.created_at.desc()).all()
+
+    # 3. Get Pending Refunds
     pending_refunds = WalletTransaction.query.filter(
         WalletTransaction.transaction_type == 'refund_request',
         WalletTransaction.status == 'pending'
     ).order_by(WalletTransaction.created_at.desc()).all()
     
-    # Load user data for refunds
+    # Process refunds for display
     refunds = []
     for refund in pending_refunds:
         user = User.query.get(refund.user_id)
         refund.user = user
         
-        # Try to get errand info from description
-        errand_id = None
+        # Try to extract errand_id from description
         if 'errand #' in refund.description.lower():
             import re
-            match = re.search(r'errand #(\d+)', refund.description)
+            match = re.search(r'errand #(\d+)', refund.description.lower())
             if match:
-                errand_id = int(match.group(1))
-                refund.errand = Errand.query.get(errand_id)
+                refund.errand = Errand.query.get(int(match.group(1)))
         
         refunds.append(refund)
     
-    # Get all transactions (recent 50)
+    # 4. Get All User Transactions (Global History)
+    # We exclude platform earnings here to keep the "User Transactions" tab clean, 
+    # or you can keep them. Let's keep them but maybe separate them in UI.
     all_transactions_query = WalletTransaction.query.filter(
-        (WalletTransaction.transaction_type != 'refund_request') |
-        (WalletTransaction.status != 'pending')
+        WalletTransaction.wallet_id != (platform_wallet.id if platform_wallet else -1),
+        ~((WalletTransaction.transaction_type == 'refund_request') & (WalletTransaction.status == 'pending'))
     ).order_by(WalletTransaction.created_at.desc()).limit(50).all()
     
-    # Load user data for transactions
     all_transactions = []
     for transaction in all_transactions_query:
         user = User.query.get(transaction.user_id)
         transaction.user = user
         all_transactions.append(transaction)
     
-    # Get payments (for reference only)
-    payments_query = Payment.query.order_by(Payment.created_at.desc()).limit(20).all()
-    
-    # Load related data for payments
-    payments = []
-    for payment in payments_query:
+    # 5. Get Payments
+    payments = Payment.query.order_by(Payment.created_at.desc()).limit(20).all()
+    for payment in payments:
         payment.errand = Errand.query.get(payment.errand_id)
         payment.client = User.query.get(payment.client_id)
         payment.runner = User.query.get(payment.runner_id) if payment.runner_id else None
-        payments.append(payment)
     
-    # Calculate stats
-    total_users = User.query.count()
-    pending_refunds_count = len(refunds)
+    # 6. Calculate Stats
     
-    # Calculate total platform earnings
-    total_platform_earnings = db.session.query(db.func.sum(Payment.platform_fee)).filter(
-        Payment.payment_status == 'released'
-    ).scalar() or 0
-    
-    # Calculate total escrow (sum of prepaid payments)
-    total_escrow_result = db.session.query(db.func.sum(Payment.amount + Payment.vat_amount)).filter(
+    # Active Escrow: Money collected but not yet released
+    total_escrow_result = db.session.query(
+        db.func.sum(db.func.coalesce(Payment.amount, 0.0))
+    ).filter(
         Payment.payment_status == 'prepaid'
     ).scalar()
     total_escrow = float(total_escrow_result) if total_escrow_result else 0.0
+
+    # Total User Wallet Balances (Excluding platform wallet)
+    total_user_balance_result = db.session.query(
+        db.func.sum(db.func.coalesce(User.wallet_balance, 0.0))
+    ).filter(
+        User.id != (platform_wallet.user_id if platform_wallet else -1)
+    ).scalar()
+    total_user_balance = float(total_user_balance_result) if total_user_balance_result else 0.0
     
     return render_template('admin/wallet_management.html',
                          refunds=refunds,
                          all_transactions=all_transactions,
+                         platform_earnings=platform_earnings, # Pass this new list
                          payments=payments,
-                         total_users=total_users,
-                         pending_refunds_count=pending_refunds_count,
-                         total_platform_earnings=float(total_platform_earnings),
-                         total_escrow=total_escrow)
+                         admin=User.query.get(session['user_id']),
+                         platform_balance=platform_balance,   # Pass explicit balance
+                         total_escrow=total_escrow,
+                         total_user_balance=total_user_balance)
 
 
 @bp.route('/admin/approve-withdrawal/<int:transaction_id>')
@@ -2226,15 +2409,31 @@ def view_receipt(errand_id):
     runner = User.query.get(errand.runner_id) if errand.runner_id else None
     
     # Calculate breakdown
-    total_amount = payment.amount if payment else errand.final_fee or errand.proposed_fee
-    platform_fee = payment.platform_fee if payment else total_amount * 0.10  # 10% platform fee
-    vat_amount = payment.vat_amount if payment else total_amount * 0.12  # 12% VAT
-    runner_earnings = payment.runner_earnings if payment else total_amount - platform_fee - vat_amount
+    if payment:
+        total_amount = payment.amount + payment.vat_amount
+        platform_fee = payment.platform_fee
+        vat_amount = payment.vat_amount
+        runner_earnings = payment.runner_earnings
+    else:
+        # If we only have the Total (final_fee), we must reverse out VAT and Commission correctly
+        total_amount = errand.final_fee or errand.proposed_fee
+        
+        # Reverse VAT (Total / 1.12 = Subtotal)
+        # Note: This assumes 12% VAT. If you change config, this fallback might be slightly off.
+        subtotal = total_amount / 1.12
+        
+        # 2. Calculate VAT (Total - Subtotal)
+        vat_amount = total_amount - subtotal
+        
+        # 3. Calculate Platform Fee (10% of Subtotal)
+        platform_fee = subtotal * 0.10
+        
+        # 4. Calculate Runner Earnings (Subtotal - Platform Fee)
+        runner_earnings = subtotal - platform_fee
     
-    # Pass refund status
     refund_status = get_errand_refund_status(errand_id)
     
-    return render_template('payment/receipt.html',  # Updated path
+    return render_template('payment/receipt.html',
                         errand=errand,
                         payment=payment,
                         client=client,
@@ -2434,7 +2633,6 @@ def approve_refund(transaction_id):
 @bp.route('/admin/reject-refund/<int:transaction_id>', methods=['POST'])
 @login_required('admin')
 def reject_refund(transaction_id):
-    """Admin reject a refund request - SIMPLE FIX"""
     try:
         transaction = WalletTransaction.query.get_or_404(transaction_id)
         reason = request.form.get('reason', 'No reason provided')

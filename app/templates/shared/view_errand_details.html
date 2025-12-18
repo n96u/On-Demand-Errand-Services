@@ -209,6 +209,16 @@
     .grid-timeline {
         grid-column: span 6;
     }
+    
+    .grid-feedback {
+        grid-column: 1 / -1; /* Full width */
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
 
     /* Status Message */
     .grid-status-message {
@@ -336,6 +346,101 @@
         border: 1px solid var(--text-muted);
     }
 
+    /* --- UPDATED RATING STYLES --- */
+    
+    /* Interactive Star Rating (Form) */
+    .star-rating-group {
+        display: inline-flex;
+        flex-direction: row-reverse;
+        gap: 0.5rem;
+        margin: 1rem 0 1.5rem;
+    }
+    
+    .star-rating-group input {
+        display: none;
+    }
+    
+    .star-rating-group label {
+        font-size: 2.5rem;
+        color: #e2e8f0; /* Empty star color */
+        cursor: pointer;
+        transition: color 0.2s ease, transform 0.1s;
+    }
+    
+    .star-rating-group label:hover {
+        transform: scale(1.1);
+    }
+
+    /* Logic: Fill stars on hover and selection */
+    .star-rating-group label:hover,
+    .star-rating-group label:hover ~ label,
+    .star-rating-group input:checked ~ label {
+        color: #fbbf24; /* Gold */
+    }
+
+    /* Display-Only Rating */
+    .rating-display-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .static-stars {
+        color: #fbbf24;
+        font-size: 2rem;
+        letter-spacing: 0.2rem;
+    }
+    
+    .rating-score-badge {
+        background: var(--primary);
+        color: white;
+        padding: 0.2rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+    
+    .review-comment-box {
+        background: var(--background);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid var(--primary);
+        font-style: italic;
+        color: var(--text-primary);
+        margin-top: 1rem;
+        max-width: 600px;
+        position: relative;
+    }
+
+    .review-comment-box::before {
+        content: '"';
+        font-family: serif;
+        font-size: 4rem;
+        color: var(--primary-light);
+        position: absolute;
+        top: -10px;
+        left: 10px;
+        opacity: 0.5;
+    }
+    
+    .rating-form-textarea {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto 1.5rem;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        resize: vertical;
+        font-family: inherit;
+    }
+    
+    .rating-form-textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
     /* Responsive */
     @media (max-width: 1024px) {
         .grid-location {
@@ -368,7 +473,8 @@
         .grid-location,
         .grid-payment,
         .grid-people,
-        .grid-timeline {
+        .grid-timeline,
+        .grid-feedback {
             grid-column: 1;
         }
         
@@ -455,14 +561,12 @@
 </style>
 
 <div class="errand-container">
-    <!-- ACTIONS AT THE VERY TOP -->
     <div class="action-buttons-top">
         {% if request.referrer and 'request-refund' not in request.referrer and 'view-errand' not in request.referrer %}
             <a href="{{ request.referrer }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back
             </a>
         {% else %}
-            <!-- Fallback navigation based on user role -->
             {% if user_role == 'client' %}
                 <a href="{{ url_for('main.errand_history') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to History
@@ -519,7 +623,6 @@
         {% endif %}
     </div>
 
-    <!-- Enhanced Errand Header -->
     <div class="errand-header">
         <div class="header-top">
             <div class="errand-title-section">
@@ -543,7 +646,6 @@
         <div class="errand-description">{{ errand.description }}</div>
     </div>
 
-    <!-- Status Message -->
     {% if errand.status == 'Completed' %}
     <div class="grid-status-message message-success">
         <div class="status-message-content">
@@ -570,9 +672,7 @@
     </div>
     {% endif %}
 
-    <!-- Grid Layout -->
     <div class="details-grid">
-        <!-- Location Information -->
         <div class="grid-item grid-location">
             <div class="grid-title">
                 <i class="fas fa-map-marker-alt"></i>
@@ -595,7 +695,6 @@
             </div>
         </div>
 
-        <!-- Payment Information -->
         <div class="grid-item grid-payment">
             <div class="grid-title">
                 <i class="fas fa-money-bill-wave"></i>
@@ -625,7 +724,6 @@
             </div>
         </div>
 
-        <!-- People Information -->
         <div class="grid-item grid-people">
             <div class="grid-title">
                 <i class="fas fa-users"></i>
@@ -654,7 +752,7 @@
                             </div>
                         {% endif %}
                     {% else %}
-                        <span style="color: var(--text-muted); font-style: italic;">Awaiting assignment</span>
+                        <span style="color: var(--text-muted); font-style: italic;">{{ runner.username }}</span>
                     {% endif %}
                 </div>
             </div>
@@ -674,7 +772,6 @@
             {% endif %}
         </div>
 
-        <!-- Timeline -->
         <div class="grid-item grid-timeline">
             <div class="grid-title">
                 <i class="fas fa-history"></i>
@@ -716,6 +813,78 @@
                 {% endif %}
             </ul>
         </div>
+
+        {% if errand.status == 'Completed' %}
+        <div class="grid-item grid-feedback">
+            {% if errand.rating %}
+                <div class="rating-display-wrapper">
+                    <div class="grid-title" style="border:none; margin:0; justify-content: center;">
+                        <i class="fas fa-star" style="color:#fbbf24;"></i> Feedback Provided
+                    </div>
+                    
+                    <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                        Submitted on {{ errand.rating.created_at.strftime('%B %d, %Y') }}
+                    </div>
+
+                    <div class="static-stars">
+                        {% for i in range(1, 6) %}
+                            <i class="{{ 'fas' if i <= errand.rating.score else 'far' }} fa-star"></i>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="rating-score-badge">
+                        {{ errand.rating.score }}.0 / 5.0
+                    </div>
+
+                    {% if errand.rating.comment %}
+                        <div class="review-comment-box">
+                            {{ errand.rating.comment }}
+                        </div>
+                    {% endif %}
+                </div>
+
+            {% elif session['user_id'] == errand.client_id %}
+                <div class="rating-form-wrapper">
+                    <div class="grid-title" style="border:none; margin:0; justify-content: center;">
+                        <i class="fas fa-edit"></i> Rate Your Runner
+                    </div>
+                    
+                    <p style="color: var(--text-muted); max-width: 500px; margin: 0.5rem auto 1.5rem;">
+                        How was your experience with <strong>{{ errand.user_runner.first_name }}</strong>? 
+                        Your honest feedback helps us maintain quality service.
+                    </p>
+
+                    <form action="{{ url_for('main.submit_rating', errand_id=errand.id) }}" method="POST">
+                        <div class="star-rating-group">
+                            <input type="radio" name="score" id="star5" value="5" required>
+                            <label for="star5" title="Excellent"><i class="fas fa-star"></i></label>
+                            
+                            <input type="radio" name="score" id="star4" value="4">
+                            <label for="star4" title="Good"><i class="fas fa-star"></i></label>
+                            
+                            <input type="radio" name="score" id="star3" value="3">
+                            <label for="star3" title="Average"><i class="fas fa-star"></i></label>
+                            
+                            <input type="radio" name="score" id="star2" value="2">
+                            <label for="star2" title="Poor"><i class="fas fa-star"></i></label>
+                            
+                            <input type="radio" name="score" id="star1" value="1">
+                            <label for="star1" title="Terrible"><i class="fas fa-star"></i></label>
+                        </div>
+
+                        <div class="form-group">
+                            <textarea name="comment" class="rating-form-textarea" rows="3" 
+                                    placeholder="Add a comment about the service (Optional)..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="min-width: 200px;">
+                            Submit Review
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -26,8 +26,14 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     wallet_balance = db.Column(db.Float, default=0.0)
-    total_earnings = db.Column(db.Float, default=0.0)  # For runners
-    total_spent = db.Column(db.Float, default=0.0)     # For clients
+    total_earnings = db.Column(db.Float, default=0.0)
+    total_spent = db.Column(db.Float, default=0.0)
+    average_rating = db.Column(db.Float, default=0.0)
+    rating_count = db.Column(db.Integer, default=0)
+
+    # Relationships - using unique backref names
+    received_ratings = db.relationship('Rating', foreign_keys='Rating.runner_id', backref='rated_runner', lazy=True)
+    given_ratings = db.relationship('Rating', foreign_keys='Rating.client_id', backref='rating_author', lazy=True)
 
     # Relationships - using unique backref names
     created_errands = db.relationship('Errand', foreign_keys='Errand.client_id', backref='user_client', lazy=True)
@@ -189,3 +195,21 @@ class PasswordResetToken(db.Model):
     
     def __repr__(self):
         return f'<PasswordResetToken {self.token[:10]}...>'
+    
+class Rating(db.Model):
+    """Ratings and feedback for completed errands"""
+    id = db.Column(db.Integer, primary_key=True)
+    errand_id = db.Column(db.Integer, db.ForeignKey('errand.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    runner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    score = db.Column(db.Integer, nullable=False)  # 1 to 5 stars
+    comment = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    errand = db.relationship('Errand', backref=db.backref('rating', uselist=False))
+    
+    def __repr__(self):
+        return f'<Rating {self.score} stars for Errand #{self.errand_id}>'
+    
+

@@ -140,10 +140,9 @@
 </style>
 
 <div class="wallet-container">
-    <!-- Wallet Header -->
     <div class="wallet-header">
         <h2 style="margin: 0; font-size: 1.5rem;">Current Balance</h2>
-        <div class="wallet-balance">₱{{ "%.2f"|format(user.wallet_balance) }}</div>
+        <div class="wallet-balance">₱{{ "%.2f"|format(wallet.balance) }}</div>
         <p style="opacity: 0.9; margin: 0.5rem 0;">Available for payments and withdrawals</p>
         
         <div class="wallet-actions">
@@ -158,9 +157,7 @@
         </div>
     </div>
 
-    <!-- Transaction Grid -->
     <div class="transaction-grid">
-        <!-- Recent Transactions -->
         <div class="transaction-card">
             <h3 style="margin-top: 0;">Recent Transactions</h3>
             <div class="transaction-list">
@@ -187,7 +184,6 @@
             </div>
         </div>
 
-        <!-- Quick Stats -->
         <div>
             <div class="transaction-card">
                 <h3 style="margin-top: 0;">Statistics</h3>
@@ -221,7 +217,6 @@
                 </div>
             </div>
 
-            <!-- Payment Methods -->
             <div class="transaction-card" style="margin-top: 1rem;">
                 <h3 style="margin-top: 0;">Payment Methods</h3>
                 {% if payment_methods %}
@@ -241,7 +236,6 @@
     </div>
 </div>
 
-<!-- Deposit Modal (only shown for non-runners) -->
 {% if user.role != 'runner' %}
 <div id="depositModal" class="modal">
     <div class="modal-content">
@@ -271,21 +265,20 @@
 </div>
 {% endif %}
 
-<!-- Withdraw Modal -->
 <div id="withdrawModal" class="modal">
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal('withdrawModal')">&times;</button>
         <h3>Withdraw Funds</h3>
         <form method="POST" action="{{ url_for('main.wallet_withdraw') }}">
             <div class="form-group">
-                <label>Amount (Max: ₱{{ "%.2f"|format(user.wallet_balance) }})</label>
-                <input type="number" name="amount" class="form-control" max="{{ user.wallet_balance }}" min="50" step="0.01" required placeholder="Enter amount">
+                <label>Amount (Max: ₱{{ "%.2f"|format(wallet.balance) }})</label>
+                <input type="number" name="amount" class="form-control" max="{{ wallet.balance }}" min="50" step="0.01" required placeholder="Enter amount">
             </div>
             <div class="form-group">
                 <label>Withdraw to</label>
                 <select name="method_id" class="form-control" required>
                     <option value="">Select method</option>
-                    <option value="direct">Direct Transfer (Our team will contact you)</option>
+                    <option value="direct">GCash</option>
                     {% if payment_methods %}
                         <optgroup label="Saved Methods">
                         {% for method in payment_methods %}
@@ -330,7 +323,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (withdrawForm) {
         withdrawForm.addEventListener('submit', function(e) {
             const amount = parseFloat(this.querySelector('input[name="amount"]').value);
-            const maxAmount = parseFloat("{{ user.wallet_balance }}");
+            // FIXED: Use wallet.balance for JS validation
+            const maxAmount = parseFloat("{{ wallet.balance }}");
             
             if (amount < 50) {
                 e.preventDefault();

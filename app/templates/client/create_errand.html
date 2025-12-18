@@ -4,267 +4,55 @@
 {% block header_title %}Create New Errand{% endblock %}
 
 {% block content %}
+{# === FALLBACK DEFAULTS (Used if dynamic config is empty) === #}
+{% set default_prices = {
+    'Food Delivery': system_config.foodDeliveryFee|default(100)|float,
+    'Grocery Shopping': system_config.groceryFee|default(150)|float,
+    'Package Delivery': system_config.packageFee|default(80)|float,
+    'Document Processing': system_config.documentFee|default(120)|float,
+    'Bill Payment': system_config.otherErrandFee|default(100)|float
+} %}
+
 <style>
-    .auth-container {
-        max-width: 800px;
-        margin: 0 auto;
-    }
-
-    .auth-card {
-        background: var(--surface);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border);
-        overflow: hidden;
-    }
-
-    .auth-header {
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-        color: white;
-        padding: 2rem;
-    }
-
-    .auth-header h2 {
-        margin: 0;
-        font-size: 1.5rem;
-    }
-
-    .auth-form {
-        padding: 2rem;
-    }
-
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-    }
-
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .form-label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 600;
-        color: var(--text-primary);
-    }
-
-    .form-control {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        font-family: inherit;
-        font-size: 0.9rem;
-        background: var(--surface);
-        color: var(--text-primary);
-    }
-
-    .form-control:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.1);
-    }
-
-    textarea.form-control {
-        resize: vertical;
-        min-height: 100px;
-    }
-
-    .config-description {
-        font-size: 0.875rem;
-        color: var(--text-muted);
-        margin-top: 0.25rem;
-    }
-
-    /* Verification Alert Styles */
-    .verification-alert {
-        animation: fadeIn 0.5s ease-in;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem 1.5rem;
-        margin-bottom: 2rem;
-        background: var(--warning-light);
-        border: 1px solid var(--warning);
-        border-radius: var(--radius);
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* For disabled state */
-    .form-control:disabled,
-    select:disabled,
-    textarea:disabled {
-        background-color: var(--background) !important;
-        cursor: not-allowed !important;
-        opacity: 0.6 !important;
-    }
-
-    .btn:disabled {
-        background-color: var(--text-muted) !important;
-        cursor: not-allowed !important;
-    }
-
-    /* Pricing Summary Styles - UPDATED */
-    .pricing-summary {
-        background: var(--background);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin: 1.5rem 0;
-        display: none;
-    }
-
-    .pricing-header {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        color: var(--text-primary);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .pricing-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 0;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .pricing-item:last-child {
-        border-bottom: none;
-    }
-
-    .pricing-label {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        flex: 2;
-    }
-
-    .pricing-value {
-        font-weight: 600;
-        color: var(--text-primary);
-        flex: 1;
-        text-align: right;
-    }
-
-    .pricing-total {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 0;
-        margin-top: 0.5rem;
-        border-top: 2px solid var(--primary);
-        font-size: 1.1rem;
-        font-weight: 700;
-    }
-
-    .total-label {
-        color: var(--text-primary);
-    }
-
-    .total-value {
-        color: var(--primary);
-        font-size: 1.3rem;
-    }
-
-    .fee-breakdown {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        margin-top: 0.25rem;
-        font-weight: normal;
-    }
-
-    .fee-breakdown-item {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 0.25rem;
-        font-size: 0.8rem;
-    }
-
-    .fee-breakdown-value {
-        color: var(--text-secondary);
-    }
-
-    .form-actions {
-        display: flex;
-        gap: 1rem;
-        margin-top: 2rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid var(--border);
-    }
-
-    .btn-block {
-        width: 100%;
-    }
-
-    /* Real-time calculation display */
-    .calculation-display {
-        background: var(--primary-light);
-        border: 1px solid var(--primary);
-        border-radius: var(--radius);
-        padding: 1rem;
-        margin: 1rem 0;
-        display: none;
-    }
-
-    .calculation-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid rgba(201, 181, 156, 0.3);
-    }
-
-    .calculation-row:last-child {
-        border-bottom: none;
-    }
-
-    .calculation-label {
-        color: var(--primary-dark);
-        font-weight: 600;
-    }
-
-    .calculation-amount {
-        color: var(--primary-dark);
-        font-weight: 600;
-    }
-
-    .calculation-total {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: var(--primary);
-    }
-
-    @media (max-width: 768px) {
-        .form-row {
-            grid-template-columns: 1fr;
-        }
-        
-        .form-actions {
-            flex-direction: column;
-        }
-        
-        .auth-form {
-            padding: 1.5rem;
-        }
-        
-        .verification-alert {
-            flex-direction: column;
-            text-align: center;
-            gap: 0.5rem;
-        }
-        
-        .calculation-display {
-            padding: 0.75rem;
-        }
-    }
+    /* === STYLES === */
+    .auth-container { max-width: 800px; margin: 0 auto; }
+    .auth-card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--border); overflow: hidden; }
+    .auth-header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 2rem; }
+    .auth-header h2 { margin: 0; font-size: 1.5rem; }
+    .auth-form { padding: 2rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary); }
+    .form-control { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: var(--radius); font-family: inherit; font-size: 0.9rem; background: var(--surface); color: var(--text-primary); }
+    .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.1); }
+    textarea.form-control { resize: vertical; min-height: 100px; }
+    .config-description { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
+    
+    /* Alerts */
+    .verification-alert { animation: fadeIn 0.5s ease-in; display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; margin-bottom: 2rem; background: var(--warning-light); border: 1px solid var(--warning); border-radius: var(--radius); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Disabled States */
+    .form-control:disabled, select:disabled, textarea:disabled { background-color: var(--background) !important; cursor: not-allowed !important; opacity: 0.6 !important; }
+    .btn:disabled { background-color: var(--text-muted) !important; cursor: not-allowed !important; }
+    
+    /* Pricing Box */
+    .pricing-summary { background: var(--background); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin: 1.5rem 0; display: none; border-left: 4px solid var(--primary); }
+    .pricing-header { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; }
+    .pricing-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+    .pricing-item:last-child { border-bottom: none; }
+    .pricing-label { color: var(--text-secondary); font-size: 0.9rem; flex: 2; }
+    .pricing-value { font-weight: 600; color: var(--text-primary); flex: 1; text-align: right; }
+    .pricing-total { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; margin-top: 0.5rem; border-top: 2px solid var(--primary); font-size: 1.1rem; font-weight: 700; }
+    .total-label { color: var(--text-primary); }
+    .total-value { color: var(--primary); font-size: 1.3rem; }
+    .fee-breakdown { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; font-weight: normal; }
+    
+    .form-actions { display: flex; gap: 1rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+    .btn-block { width: 100%; }
+    .dynamic-field { animation: fadeIn 0.3s ease-out; }
+    
+    @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } .form-actions { flex-direction: column; } .auth-form { padding: 1.5rem; } .verification-alert { flex-direction: column; text-align: center; gap: 0.5rem; } }
 </style>
 
 <div class="auth-container">
@@ -278,137 +66,74 @@
         
         <div class="auth-form">
             <form method="post" id="errandForm">
-                <!-- Hidden fields for calculated values -->
+                {# Hidden inputs to send calculated values to backend #}
                 <input type="hidden" name="calculated_base_price" id="calculatedBasePrice" value="">
                 <input type="hidden" name="calculated_delivery_fee" id="calculatedDeliveryFee" value="">
                 <input type="hidden" name="calculated_total" id="calculatedTotal" value="">
+                <input type="hidden" name="estimated_distance" id="estimatedDistance" value="">
                 
-                <!-- ===== VERIFICATION ALERT ===== -->
+                {# === Verification Check === #}
                 {% if not user.verified %}
                 <div class="verification-alert">
                     <i class="fas fa-exclamation-triangle" style="font-size: 1.5rem; color: var(--warning);"></i>
                     <div style="flex: 1;">
                         <strong style="color: var(--warning-dark);">Account Verification Required</strong>
                         <div style="font-size: 0.9rem; margin-top: 0.25rem; color: var(--warning-dark);">
-                            {% if user.verification_status == 'pending' %}
-                            Your verification request is under review. You'll be able to post errands once approved.
-                            {% elif user.verification_status == 'rejected' %}
-                            Your verification was rejected. Please submit a new request or contact support.
-                            {% else %}
                             Verify your account to start posting errands and access all features.
-                            {% endif %}
                         </div>
                     </div>
-                    {% if user.verification_status != 'pending' %}
                     <a href="{{ url_for('main.verification') }}" class="btn btn-warning btn-sm" style="white-space: nowrap;">
-                        <i class="fas fa-shield-alt mr-1"></i>
-                        {% if user.verification_status == 'rejected' %}Re-submit{% else %}Verify Now{% endif %}
+                        <i class="fas fa-shield-alt mr-1"></i> Verify Now
                     </a>
-                    {% endif %}
                 </div>
                 {% endif %}
-                <!-- ===== END VERIFICATION ALERT ===== -->
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Service Category</label>
                         <select name="category" class="form-control" id="categorySelect" required 
-                                onchange="calculateTotalFee()" {% if not user.verified %}disabled{% endif %}>
+                                onchange="handleCategoryChange()" {% if not user.verified %}disabled{% endif %}>
                             <option value="">Select a service category</option>
-                            {% for category, price in categories.items() %}
+                            {# Fallback loop if JS fails or JSON is empty #}
+                            {% for category, price in default_prices.items() %}
                             <option value="{{ category }}" data-base-price="{{ price }}">
-                                {{ category }} (₱{{ "%.2f"|format(price) }})
+                                {{ category }} (Starts at ₱{{ "%.2f"|format(price) }})
                             </option>
                             {% endfor %}
                         </select>
-                        <div class="config-description">
-                            Choose the type of service you need
+                        <div class="config-description" id="categoryDescription">
+                            Select a category to see specific forms.
                         </div>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Barangay</label>
+                        <label class="form-label">Municipality / Area</label>
                         <select name="barangay" class="form-control" id="barangaySelect" required 
                                 onchange="calculateTotalFee()" {% if not user.verified %}disabled{% endif %}>
-                            <option value="">Select your barangay</option>
-                            {% for barangay in barangays %}
+                            <option value="">Select your area</option>
+                            {# Fallback static list #}
+                            {% for barangay in ['Lipa City', 'Sto. Tomas', 'Tanuan', 'Rosario', 'Padre Garcia'] %}
                             <option value="{{ barangay }}">{{ barangay }}</option>
                             {% endfor %}
                         </select>
                         <div class="config-description">
-                            Select your location for delivery calculation
+                            We use this to calculate base distance fees.
                         </div>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Pickup Address</label>
-                    <input type="text" name="pickup_address" class="form-control" 
-                           placeholder="Enter complete pickup address" required 
-                           {% if not user.verified %}disabled{% endif %}>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Drop-off Address</label>
-                    <input type="text" name="dropoff_address" class="form-control" 
-                           placeholder="Enter complete drop-off address" required 
-                           {% if not user.verified %}disabled{% endif %}>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Errand Description</label>
-                    <textarea name="description" class="form-control" 
-                              placeholder="Provide detailed description of what you need done..." 
-                              required {% if not user.verified %}disabled{% endif %}></textarea>
-                    <div class="config-description">
-                        Be specific about items, quantities, and any special instructions
+                {# === DYNAMIC FORM CONTAINER === #}
+                <div id="dynamicFormFields">
+                    <div style="padding: 2rem; text-align: center; color: var(--text-muted); background: var(--background); border-radius: var(--radius); border: 1px dashed var(--border);">
+                        <i class="fas fa-hand-pointer"></i> Please select a Service Category above to proceed.
                     </div>
                 </div>
 
-                <!-- Real-time Calculation Display -->
-                <div class="calculation-display" id="calculationDisplay">
-                    <div class="calculation-row">
-                        <div class="calculation-label">Base Service Fee:</div>
-                        <div class="calculation-amount" id="calcBasePrice">₱0.00</div>
-                    </div>
-                    <div class="calculation-row">
-                        <div class="calculation-label">
-                            Delivery Fee:
-                            <div class="fee-breakdown" id="calcDeliveryBreakdown"></div>
-                        </div>
-                        <div class="calculation-amount" id="calcDeliveryFee">₱0.00</div>
-                    </div>
-                    <div class="calculation-row">
-                        <div class="calculation-label">Subtotal:</div>
-                        <div class="calculation-amount" id="calcSubtotal">₱0.00</div>
-                    </div>
-                    <div class="calculation-row">
-                        <div class="calculation-label">VAT ({{ config.get('vatRate', '12.00') }}%):</div>
-                        <div class="calculation-amount" id="calcVat">₱0.00</div>
-                    </div>
-                    <div class="calculation-row calculation-total">
-                        <div class="calculation-label">TOTAL AMOUNT:</div>
-                        <div class="calculation-amount" id="calcTotal">₱0.00</div>
-                    </div>
-                    <div class="calculation-row" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed var(--border);">
-                        <div class="calculation-label" style="font-size: 0.9rem; color: var(--text-muted);">
-                            <i class="fas fa-info-circle"></i> Platform Fee ({{ config.get('platformCommission', '10.00') }}%):
-                        </div>
-                        <div class="calculation-amount" style="font-size: 0.9rem; color: var(--text-muted);" id="calcPlatformFee">₱0.00</div>
-                    </div>
-                    <div class="calculation-row">
-                        <div class="calculation-label" style="font-size: 0.9rem; color: var(--text-muted);">
-                            <i class="fas fa-running"></i> Runner Earnings:
-                        </div>
-                        <div class="calculation-amount" style="font-size: 0.9rem; color: var(--text-muted);" id="calcRunnerEarnings">₱0.00</div>
-                    </div>
-                </div>
-
-                <!-- Pricing Summary -->
+                {# === PRICING CALCULATOR === #}
                 <div class="pricing-summary" id="pricingSummary">
                     <div class="pricing-header">
                         <i class="fas fa-receipt"></i>
-                        Service Fee Summary
+                        Cost Breakdown
                     </div>
                     
                     <div class="pricing-item">
@@ -429,22 +154,15 @@
                     
                     <div class="pricing-item">
                         <div class="pricing-label">
-                            Tax ({{ config.get('vatRate', '12.00') }}% VAT)
-                            <div class="fee-breakdown">Applied to service and delivery fees</div>
+                            VAT ({{ system_config.vatRate|default('12') }}%)
+                            <div class="fee-breakdown">Govt mandated tax</div>
                         </div>
                         <div class="pricing-value">₱<span id="summaryTaxAmount">0.00</span></div>
                     </div>
                     
                     <div class="pricing-total">
-                        <div class="total-label">Total Amount</div>
+                        <div class="total-label">Estimated Total</div>
                         <div class="total-value">₱<span id="summaryTotalAmount">0.00</span></div>
-                    </div>
-                    
-                    <div style="margin-top: 1rem; padding: 0.75rem; background: var(--primary-light); border-radius: var(--radius);">
-                        <div style="font-size: 0.8rem; color: var(--primary-dark); text-align: center;">
-                            <i class="fas fa-info-circle"></i>
-                            This total amount will be charged for the service
-                        </div>
                     </div>
                 </div>
 
@@ -452,10 +170,8 @@
                     <label class="form-label">Payment Method</label>
                     <select name="payment_method" class="form-control" required {% if not user.verified %}disabled{% endif %}>
                         <option value="">Select payment method</option>
-                        <option value="wallet">Use Wallet Balance (₱{{ "%.2f"|format(user.wallet_balance) }})</option>
-                        <option value="gcash">GCash</option>
-                        <option value="paymaya">PayMaya</option>
-                        <option value="card">Credit/Debit Card</option>
+                        <option value="cash">Cash on Delivery</option>
+                        <option value="wallet">Wallet Balance (₱{{ "%.2f"|format(user.wallet_balance) }})</option>
                     </select>
                 </div>
 
@@ -464,9 +180,6 @@
                         <input type="checkbox" name="use_wallet" id="use_wallet" value="on" 
                                onchange="toggleWalletPayment()" {% if not user.verified %}disabled{% endif %}>
                         <label for="use_wallet" style="margin: 0; font-weight: 600;">Pay with wallet balance</label>
-                    </div>
-                    <div class="config-description">
-                        Your wallet balance will be used first. If insufficient, the remaining amount will be charged to your selected payment method.
                     </div>
                 </div>
 
@@ -485,245 +198,249 @@
 </div>
 
 <script>
-// Get pricing configuration from server
+// === 1. GET SYSTEM CONFIGURATION FROM SERVER ===
 function getPricingConfig() {
     return {
-        baseFees: JSON.parse('{{ categories|tojson|safe }}'),
         deliveryFee: {
-            base: parseFloat('{{ config.get("baseDeliveryFee", 50.00) }}'),
-            perKm: parseFloat('{{ config.get("perKmRate", 15.00) }}'),
-            maxDistance: parseFloat('{{ config.get("maxDistance", 20) }}')
+            base: parseFloat('{{ system_config.baseDeliveryFee|default(50.00) }}'),
+            perKm: parseFloat('{{ system_config.perKmRate|default(15.00) }}'),
+            baseKm: parseFloat('{{ system_config.baseDistanceIncluded|default(3.0) }}')
         },
-        taxRate: parseFloat('{{ config.get("vatRate", 12.00) }}') / 100,
-        platformCommission: parseFloat('{{ config.get("platformCommission", 10.00) }}') / 100,
-        distanceMatrix: {
-            'Barangay 1': parseFloat('{{ config.get("barangay1Distance", 2.5) }}'),
-            'Barangay 2': parseFloat('{{ config.get("barangay2Distance", 5.0) }}'),
-            'Barangay 3': parseFloat('{{ config.get("barangay3Distance", 7.5) }}'),
-            'Barangay 4': parseFloat('{{ config.get("barangay4Distance", 10.0) }}'),
-            'Barangay 5': parseFloat('{{ config.get("barangay5Distance", 12.5) }}')
-        }
+        taxRate: parseFloat('{{ system_config.vatRate|default(12.00) }}') / 100
     };
 }
 
-// Calculate distance based on barangay
-function calculateDistance(barangay) {
-    const config = getPricingConfig();
-    return config.distanceMatrix[barangay] || config.distanceMatrix['Barangay 2'] || 5.0;
-}
-
-// Format currency
-function formatCurrency(amount) {
-    return '₱' + amount.toFixed(2);
-}
-
-// Update wallet balance display
-function updateWalletBalanceDisplay() {
-    const walletBalance = parseFloat('{{ user.wallet_balance|default(0) }}');
-    const walletOption = document.querySelector('option[value="wallet"]');
-    if (walletOption) {
-        walletOption.textContent = `Use Wallet Balance (${formatCurrency(walletBalance)})`;
-    }
-}
-
-// Toggle wallet payment
-function toggleWalletPayment() {
-    const useWallet = document.getElementById('use_wallet').checked;
-    const totalAmount = parseFloat(document.getElementById('calcTotal').textContent.replace('₱', '')) || 0;
-    const walletBalance = parseFloat('{{ user.wallet_balance|default(0) }}');
-    
-    if (useWallet && totalAmount > 0) {
-        if (walletBalance >= totalAmount) {
-            // Sufficient balance
-            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Pay with Wallet';
-            document.getElementById('submitBtn').disabled = false;
-            document.getElementById('submitBtn').classList.remove('btn-warning');
-        } else {
-            // Insufficient balance
-            const shortage = totalAmount - walletBalance;
-            document.getElementById('submitBtn').innerHTML = `<i class="fas fa-exclamation-triangle"></i> Insufficient Balance (Short: ${formatCurrency(shortage)})`;
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').classList.add('btn-warning');
-            return;
+// === 2. DYNAMIC DROPDOWNS POPULATION ===
+function populateDynamicCategories() {
+    // Safely get JSON from Jinja2 context
+    let rawJson = `{{ system_config.serviceCategories_json|default('[]')|safe }}`;
+    try {
+        const categories = JSON.parse(rawJson);
+        const select = document.getElementById('categorySelect');
+        
+        // Only override if we actually have data
+        if (categories && categories.length > 0) {
+            select.innerHTML = '<option value="">Select a service category</option>';
+            categories.forEach(cat => {
+                if (cat.active) {
+                    const opt = document.createElement('option');
+                    opt.value = cat.name;
+                    opt.textContent = `${cat.name} (Start at ₱${parseFloat(cat.price).toFixed(2)})`;
+                    opt.setAttribute('data-base-price', cat.price);
+                    opt.setAttribute('data-description', cat.description || '');
+                    select.appendChild(opt);
+                }
+            });
         }
-    } else {
-        document.getElementById('submitBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Create Errand';
-        document.getElementById('submitBtn').disabled = false;
-        document.getElementById('submitBtn').classList.remove('btn-warning');
+    } catch (e) {
+        console.warn("Could not parse dynamic categories, falling back to defaults.");
     }
 }
 
-// Main function to calculate total fee
+function populateDynamicLocations() {
+    let rawJson = `{{ system_config.barangayList_json|default('[]')|safe }}`;
+    try {
+        const locations = JSON.parse(rawJson);
+        const select = document.getElementById('barangaySelect');
+        
+        if (locations && locations.length > 0) {
+            select.innerHTML = '<option value="">Select your area</option>';
+            locations.forEach(loc => {
+                const opt = document.createElement('option');
+                opt.value = loc.name;
+                opt.textContent = loc.name;
+                // Store surcharge data in the option element
+                opt.setAttribute('data-surcharge', loc.surcharge || 0);
+                select.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.warn("Could not parse dynamic locations.");
+    }
+}
+
+// === 3. FORM UI BUILDER ===
+function handleCategoryChange() {
+    updateDynamicFields();
+    calculateTotalFee();
+}
+
+function updateDynamicFields() {
+    const categorySelect = document.getElementById('categorySelect');
+    const category = categorySelect.value;
+    const container = document.getElementById('dynamicFormFields');
+    const isVerified = "{{ 'true' if user.verified else 'false' }}";
+    const disabledAttr = (isVerified === 'false') ? 'disabled' : '';
+
+    if (!category) {
+        container.innerHTML = `
+            <div style="padding: 2rem; text-align: center; color: var(--text-muted); background: var(--background); border-radius: var(--radius); border: 1px dashed var(--border);">
+                <i class="fas fa-hand-pointer"></i> Please select a Service Category above to proceed.
+            </div>`;
+        return;
+    }
+
+    // Determine field labels based on category context
+    let pickupLabel = "Pickup Address";
+    let pickupPlaceholder = "Enter complete address";
+    let dropoffLabel = "Drop-off Address";
+    let descPlaceholder = "Provide detailed description...";
+    let icon = "fa-box";
+
+    if (category.toLowerCase().includes('food')) {
+        pickupLabel = "Restaurant / Stall Location";
+        pickupPlaceholder = "e.g. Jollibee, Bayan Market Stall #4";
+        descPlaceholder = "List your order items (e.g., 2x Burger, 1x Fries)...";
+        icon = "fa-utensils";
+    } else if (category.toLowerCase().includes('grocery') || category.toLowerCase().includes('shop')) {
+        pickupLabel = "Store / Supermarket Name";
+        pickupPlaceholder = "e.g. Puregold, SM Supermarket";
+        descPlaceholder = "List items to buy, brand preferences, max budget...";
+        icon = "fa-shopping-cart";
+    } else if (category.toLowerCase().includes('bill')) {
+        pickupLabel = "Payment Center";
+        pickupPlaceholder = "e.g. Meralco, Bayad Center";
+        descPlaceholder = "Account Number, Account Name, Amount to pay...";
+        icon = "fa-file-invoice-dollar";
+    } else if (category.toLowerCase().includes('document')) {
+        pickupLabel = "Pickup Location";
+        dropoffLabel = "Submission Location";
+        descPlaceholder = "What documents are being processed?";
+        icon = "fa-file-alt";
+    }
+
+    // Inject HTML
+    container.innerHTML = `
+        <div class="dynamic-field">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-map-marker-alt" style="color:var(--primary)"></i> ${pickupLabel}</label>
+                    <input type="text" name="pickup_address" class="form-control" 
+                           placeholder="${pickupPlaceholder}" required ${disabledAttr}>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-location-arrow" style="color:var(--accent)"></i> ${dropoffLabel}</label>
+                    <input type="text" name="dropoff_address" class="form-control" 
+                           placeholder="Enter complete address" required ${disabledAttr}>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label"><i class="fas ${icon}" style="color:var(--text-secondary)"></i> Details / Instructions</label>
+                <textarea name="description" class="form-control" 
+                          placeholder="${descPlaceholder}" 
+                          required ${disabledAttr}></textarea>
+                <div class="config-description">
+                    Be specific about items, quantities, and any special instructions
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// === 4. FEE CALCULATION LOGIC ===
 function calculateTotalFee() {
     const categorySelect = document.getElementById('categorySelect');
     const barangaySelect = document.getElementById('barangaySelect');
-    const calculationDisplay = document.getElementById('calculationDisplay');
     const pricingSummary = document.getElementById('pricingSummary');
-    const submitBtn = document.getElementById('submitBtn');
     
     if (!categorySelect.value || !barangaySelect.value) {
-        calculationDisplay.style.display = 'none';
         pricingSummary.style.display = 'none';
-        submitBtn.disabled = true;
         return;
     }
     
     const config = getPricingConfig();
     
-    // Get base price from selected category
-    const basePrice = config.baseFees[categorySelect.value] || 0;
+    // 1. Get Base Price from Category
+    const basePrice = parseFloat(categorySelect.options[categorySelect.selectedIndex].getAttribute('data-base-price')) || 0;
     
-    // Calculate delivery fee based on distance
-    const distance = calculateDistance(barangaySelect.value);
-    const deliveryFee = config.deliveryFee.base + (distance * config.deliveryFee.perKm);
+    // 2. Get Surcharge from Barangay (set in system_config)
+    const remoteSurcharge = parseFloat(barangaySelect.options[barangaySelect.selectedIndex].getAttribute('data-surcharge')) || 0;
     
-    // Calculate subtotal
+    // 3. Calculate Distance Fee
+    // NOTE: In a real app, this would use Google Maps API. 
+    // Here we simulate distance based on basic logic or randomization for demo purposes,
+    // or assume a fixed average distance for the selected barangay.
+    const distance = 5.0; // Default average distance
+    
+    let deliveryFee = config.deliveryFee.base;
+    let distanceMsg = `${config.deliveryFee.baseKm}km base included`;
+    
+    // Add Excess Distance Fee
+    if (distance > config.deliveryFee.baseKm) {
+        const excess = distance - config.deliveryFee.baseKm;
+        const excessFee = excess * config.deliveryFee.perKm;
+        deliveryFee += excessFee;
+        distanceMsg += ` + ${excess.toFixed(1)}km excess`;
+    }
+    
+    // Add Remote Surcharge
+    if (remoteSurcharge > 0) {
+        deliveryFee += remoteSurcharge;
+        distanceMsg += ` + Remote Area Fee`;
+    }
+
+    // 4. Calculate Totals
     const subtotal = basePrice + deliveryFee;
-    
-    // Calculate tax
     const taxAmount = subtotal * config.taxRate;
-    
-    // Calculate platform commission
-    const platformFee = subtotal * config.platformCommission;
-    
-    // Calculate total (what user pays)
     const totalAmount = subtotal + taxAmount;
     
-    // Calculate runner earnings (what runner gets)
-    const runnerEarnings = subtotal - platformFee;
-    
-    // Update calculation display
-    document.getElementById('calcBasePrice').textContent = formatCurrency(basePrice);
-    document.getElementById('calcDeliveryFee').textContent = formatCurrency(deliveryFee);
-    document.getElementById('calcSubtotal').textContent = formatCurrency(subtotal);
-    document.getElementById('calcVat').textContent = formatCurrency(taxAmount);
-    document.getElementById('calcTotal').textContent = formatCurrency(totalAmount);
-    document.getElementById('calcPlatformFee').textContent = formatCurrency(platformFee);
-    document.getElementById('calcRunnerEarnings').textContent = formatCurrency(runnerEarnings);
-    
-    // Update delivery breakdown
-    document.getElementById('calcDeliveryBreakdown').innerHTML = 
-        `${distance.toFixed(1)}km × ${formatCurrency(config.deliveryFee.perKm)} + Base ${formatCurrency(config.deliveryFee.base)}`;
-    
-    // Update summary display
+    // 5. Update UI
     document.getElementById('summaryBasePrice').textContent = basePrice.toFixed(2);
     document.getElementById('summaryDeliveryFee').textContent = deliveryFee.toFixed(2);
     document.getElementById('summaryTaxAmount').textContent = taxAmount.toFixed(2);
     document.getElementById('summaryTotalAmount').textContent = totalAmount.toFixed(2);
-    
-    // Update summary breakdowns
     document.getElementById('summaryCategory').textContent = categorySelect.value;
-    document.getElementById('summaryDeliveryBreakdown').innerHTML = 
-        `${distance.toFixed(1)}km × ${formatCurrency(config.deliveryFee.perKm)} + Base ${formatCurrency(config.deliveryFee.base)}`;
+    document.getElementById('summaryDeliveryBreakdown').textContent = distanceMsg;
     
-    // Update hidden form values
+    // 6. Update Hidden Inputs
     document.getElementById('calculatedBasePrice').value = basePrice.toFixed(2);
     document.getElementById('calculatedDeliveryFee').value = deliveryFee.toFixed(2);
     document.getElementById('calculatedTotal').value = totalAmount.toFixed(2);
+    document.getElementById('estimatedDistance').value = distance;
     
-    // Show displays
-    calculationDisplay.style.display = 'block';
     pricingSummary.style.display = 'block';
-    
-    // Enable/disable submit button based on wallet balance if using wallet
+    toggleWalletPayment();
+}
+
+function toggleWalletPayment() {
     const useWallet = document.getElementById('use_wallet').checked;
-    if (useWallet) {
-        toggleWalletPayment();
+    const totalAmount = parseFloat(document.getElementById('summaryTotalAmount').textContent) || 0;
+    const walletBalance = parseFloat('{{ user.wallet_balance|default(0) }}');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (useWallet && totalAmount > 0) {
+        if (walletBalance >= totalAmount) {
+            submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Pay & Create Errand';
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('btn-warning');
+            submitBtn.classList.add('btn-primary');
+        } else {
+            const shortage = totalAmount - walletBalance;
+            submitBtn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Insufficient Balance (Short: ₱${shortage.toFixed(2)})`;
+            submitBtn.disabled = true;
+            submitBtn.classList.remove('btn-primary');
+            submitBtn.classList.add('btn-warning');
+        }
     } else {
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Create Errand';
         submitBtn.disabled = false;
         submitBtn.classList.remove('btn-warning');
-        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Create Errand';
+        submitBtn.classList.add('btn-primary');
     }
 }
 
-// Initialize event listeners when page loads
+// Initialize on Load
 document.addEventListener('DOMContentLoaded', function() {
-    const categorySelect = document.getElementById('categorySelect');
-    const barangaySelect = document.getElementById('barangaySelect');
-    const useWalletCheckbox = document.getElementById('use_wallet');
+    populateDynamicCategories();
+    populateDynamicLocations();
     
-    // Add event listeners for live calculation
-    if (categorySelect) {
-        categorySelect.addEventListener('change', calculateTotalFee);
-    }
-    
-    if (barangaySelect) {
-        barangaySelect.addEventListener('change', calculateTotalFee);
-    }
-    
-    if (useWalletCheckbox) {
-        useWalletCheckbox.addEventListener('change', toggleWalletPayment);
-    }
-    
-    // Calculate initial fee if both fields are already filled
-    if (categorySelect && categorySelect.value && barangaySelect && barangaySelect.value) {
+    // Check if form has values (e.g. after validation error reload)
+    if(document.getElementById('categorySelect').value) {
+        updateDynamicFields();
         calculateTotalFee();
     }
-    
-    // Check if user is verified and disable form if not
-    const userVerified = "{{ 'true' if user.verified else 'false' }}";
-    
-    if (!userVerified) {
-        // Disable all form elements
-        const form = document.getElementById('errandForm');
-        const formElements = form.querySelectorAll('input, select, textarea, button[type="submit"]');
-        
-        formElements.forEach(element => {
-            element.disabled = true;
-            element.style.opacity = '0.6';
-            element.style.cursor = 'not-allowed';
-        });
-        
-        // Change submit button text and icon
-        const submitBtn = form.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-lock"></i> Verification Required';
-        }
-    }
-    
-    // Form submission validation
-    const errandForm = document.getElementById('errandForm');
-    if (errandForm) {
-        errandForm.addEventListener('submit', function(e) {
-            const userVerified = "{{ 'true' if user.verified else 'false' }}";
-            if (!userVerified) {
-                e.preventDefault();
-                alert('Please verify your account before creating errands.');
-                window.location.href = "{{ url_for('main.verification') }}";
-                return false;
-            }
-            
-            const categorySelect = document.getElementById('categorySelect');
-            const barangaySelect = document.getElementById('barangaySelect');
-            const useWallet = document.getElementById('use_wallet').checked;
-            const walletBalance = parseFloat('{{ user.wallet_balance|default(0) }}');
-            const totalAmount = parseFloat(document.getElementById('calculatedTotal').value) || 0;
-            
-            if (!categorySelect.value || !barangaySelect.value) {
-                e.preventDefault();
-                alert('Please select both service category and barangay to continue.');
-                return false;
-            }
-            
-            if (useWallet && walletBalance < totalAmount) {
-                e.preventDefault();
-                alert(`Insufficient wallet balance. You have ₱${walletBalance.toFixed(2)} but need ₱${totalAmount.toFixed(2)}.`);
-                return false;
-            }
-            
-            // Show confirmation with total amount
-            const confirmation = confirm(`Total Amount: ₱${totalAmount.toFixed(2)}\n\nClick OK to confirm and create errand.`);
-            if (!confirmation) {
-                e.preventDefault();
-                return false;
-            }
-            
-            return true;
-        });
-    }
-    
-    // Update wallet balance display on page load
-    updateWalletBalanceDisplay();
 });
 </script>
 {% endblock %}

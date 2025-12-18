@@ -82,7 +82,7 @@
         transform: translateY(-50%);
         color: var(--text-muted);
         transition: var(--transition);
-        z-index: 3; /* Increased z-index to stay above error borders */
+        z-index: 3;
     }
 
     .form-control {
@@ -95,7 +95,7 @@
         transition: var(--transition);
         background: var(--surface);
         position: relative;
-        z-index: 2; /* Ensure input is above background but below icon */
+        z-index: 2;
     }
 
     .form-control.with-icon {
@@ -115,7 +115,7 @@
     .form-control.error {
         border-color: var(--error);
         box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
-        padding-right: 2.5rem; /* Add space for error icon */
+        padding-right: 2.5rem;
     }
 
     .error-message {
@@ -367,7 +367,7 @@
                             <i class="input-icon fas fa-phone"></i>
                             <input type="tel" name="phone" id="phone" class="form-control with-icon" 
                                    placeholder="Enter valid phone number" required
-                                   pattern="[0-9]{11}" title="Phone number)"
+                                   pattern="[0-9]{11}" title="Phone number"
                                    maxlength="11">
                         </div>
                         <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">
@@ -380,11 +380,8 @@
                 <div class="form-group">
                     <label class="form-label">Barangay *</label>
                     <select name="barangay" id="barangay" class="form-control" required>
-                        <option value="">Select your barangay</option>
-                        {% for barangay in barangays %}
-                        <option value="{{ barangay }}">{{ barangay }}</option>
-                        {% endfor %}
-                    </select>
+                        <option value="" disabled selected>Select Barangay</option>
+                        </select>
                     <div class="error-message" id="barangayError"></div>
                 </div>
                 
@@ -415,6 +412,42 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // --- 1. Populate Barangays from System Config (FIXED) ---
+        const barangaySelect = document.getElementById('barangay');
+        
+        // Use single quotes around the jinja block to ensure it's treated as a string string literal first
+        const rawBarangayData = '{{ system_config.barangayList_json | default("[]") | safe }}';
+        
+        try {
+            // Parse the JSON string into an actual JavaScript Array
+            const barangayList = JSON.parse(rawBarangayData);
+            
+            if (Array.isArray(barangayList) && barangayList.length > 0) {
+                // Sort alphabetically by name
+                barangayList.sort((a, b) => a.name.localeCompare(b.name));
+                
+                barangayList.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.name;
+                    opt.textContent = b.name;
+                    barangaySelect.appendChild(opt);
+                });
+            } else {
+                console.warn("No barangay configuration found in system config.");
+                const opt = document.createElement('option');
+                opt.text = "No barangays configured";
+                opt.disabled = true;
+                barangaySelect.appendChild(opt);
+            }
+        } catch (e) {
+            console.error("Error parsing barangay data:", e);
+            const opt = document.createElement('option');
+            opt.text = "Error loading locations";
+            opt.disabled = true;
+            barangaySelect.appendChild(opt);
+        }
+
+        // --- 2. Form Validation Logic (Existing) ---
         const registerForm = document.getElementById('registerForm');
         const submitBtn = document.getElementById('submitBtn');
         

@@ -363,7 +363,13 @@
                                 <div class="earning-meta">{{ errand.user_client.username }} • {{ errand.completed_at.strftime('%b %d, %Y') }}</div>
                             </div>
                         </div>
-                        <div class="earning-amount">₱{{ "%.2f"|format(errand.final_fee or errand.proposed_fee) }}</div>
+                        <div class="earning-amount">
+                            {% if errand.payment %}
+                                ₱{{ "%.2f"|format(errand.payment.runner_earnings) }}
+                            {% else %}
+                                ₱{{ "%.2f"|format((errand.final_fee or errand.proposed_fee)/1.12 * 0.9) }}
+                            {% endif %}
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -379,46 +385,6 @@
             {% endif %}
         </div>
     </div>
-
-    <!-- Earnings Summary -->
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Earnings Summary</h2>
-        </div>
-        <div class="card-body">
-            <div class="progress-item">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>This Month</span>
-                    <span style="font-weight: 600;">₱{{ "%.2f"|format(total_earnings * 0.3) }}</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 30%"></div>
-                </div>
-            </div>
-
-            <div class="progress-item">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>This Week</span>
-                    <span style="font-weight: 600;">₱{{ "%.2f"|format(weekly_earnings) }}</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 60%"></div>
-                </div>
-            </div>
-
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-value">{{ completed_count }}</div>
-                    <div class="metric-label">Total Jobs</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">100%</div>
-                    <div class="metric-label">Success Rate</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Payment History -->
 <div class="card" style="margin-top: 2rem;">
@@ -444,7 +410,13 @@
                         <td>{{ errand.completed_at.strftime('%Y-%m-%d') if errand.completed_at else errand.updated_at.strftime('%Y-%m-%d') }}</td>
                         <td>#{{ errand.id }}</td>
                         <td>{{ errand.category }} for {{ errand.user_client.username }}</td>
-                        <td style="font-weight: 600; color: var(--primary);">₱{{ "%.2f"|format(errand.final_fee or errand.proposed_fee) }}</td>
+                        <td style="font-weight: 600; color: var(--primary);">
+                            {% if errand.payment %}
+                                ₱{{ "%.2f"|format(errand.payment.runner_earnings) }}
+                            {% else %}
+                                ₱{{ "%.2f"|format((errand.final_fee or errand.proposed_fee)/1.12 * 0.9) }}
+                            {% endif %}
+                        </td>
                         <td><span class="badge badge-success">Paid</span></td>
                     </tr>
                     {% else %}

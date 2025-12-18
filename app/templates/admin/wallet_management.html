@@ -11,6 +11,31 @@
     padding: 0 1.5rem;
 }
 
+.dashboard-stats {
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    gap: 1.5rem; 
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--surface); 
+    padding: 2rem; 
+    border-radius: var(--radius-lg); 
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* --- Tabs --- */
 .tabs {
     display: flex;
     gap: 0.5rem;
@@ -25,150 +50,235 @@
     background: none;
     cursor: pointer;
     font-weight: 600;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    font-size: 0.95rem;
 }
 
+.tab-btn:hover { color: var(--primary); }
 .tab-btn.active {
     color: var(--primary);
     border-bottom: 3px solid var(--primary);
 }
 
-.tab-content { display: none; }
+.tab-content { display: none; animation: fadeIn 0.3s ease; }
 .tab-content.active { display: block; }
 
+/* --- Table Styles --- */
 .table-container {
     background: var(--surface);
     border-radius: 12px;
     overflow-x: auto;
     border: 1px solid var(--border);
     margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
 }
 
-/* ✅ STABLE GRID */
-.table-header,
-.table-row {
+.table-header, .table-row {
     display: grid;
-    grid-template-columns:
-        70px
-        110px
-        minmax(160px, 1.2fr)
-        minmax(120px, 1fr)
-        minmax(130px, 1fr)
-        minmax(220px, 2fr)
-        120px;
+    /* Adjusted grid to fit Actions column */
+    grid-template-columns: 80px 140px 1.5fr 120px 120px 2fr 160px;
     padding: 1rem 1.5rem;
     align-items: center;
+    gap: 1rem;
 }
 
 .table-header {
     background: var(--primary-light);
     font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--border);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .table-row {
     border-bottom: 1px solid var(--border);
+    transition: background-color 0.2s;
 }
+.table-row:hover { background: var(--background); }
 
-.table-row:hover {
-    background: var(--background);
-}
+/* --- Cell Styles --- */
+.user-cell { display: flex; flex-direction: column; }
+.user-name { font-weight: 600; color: var(--text-primary); }
+.user-role { font-size: 0.8rem; color: var(--text-muted); text-transform: capitalize; }
 
-.table-header > div,
-.table-row > div {
-    padding: 0.25rem 0.5rem;
-    min-width: 0;
-    word-break: break-word;
-}
+.amount-cell { font-weight: 600; font-family: monospace; font-size: 1rem; }
+.amount-positive { color: var(--success); }
+.amount-negative { color: var(--error); }
+.amount-neutral { color: var(--text-secondary); }
 
-.user-cell {
-    display: flex;
-    flex-direction: column;
-}
+.description-cell { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4; }
 
-.user-name { font-weight: 600; }
-.user-role { font-size: 0.8rem; color: var(--text-muted); }
-
-/* ✅ FIXED TYPE + AMOUNT */
-.type-cell,
-.amount-cell {
-    min-width: 120px;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start; /* ✅ LEFT ALIGNED */
-}
-
-.amount-cell {
-    font-weight: 600;
-}
-
-.description-cell {
-    font-size: 0.9rem;
-    line-height: 1.4;
-    max-height: 3rem;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    line-clamp: 2;
-}
-
-.balance-cell {
-    font-weight: 600;
-}
-
+/* --- Badges --- */
 .badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
-.amount-positive { color: green; }
-.amount-negative { color: red; }
+/* Transaction Type Colors */
+.type-deposit    { background: #e6fffa; color: #2c7a7b; border: 1px solid #b2f5ea; }
+.type-credit     { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+.type-refund     { background: #f0fff4; color: #2f855a; border: 1px solid #9ae6b4; }
+.type-withdrawal { background: #fffaf0; color: #9c4221; border: 1px solid #fbd38d; }
+.type-payment    { background: #fff5f5; color: #9b2c2c; border: 1px solid #feb2b2; }
+.type-debit      { background: #fff5f5; color: #c53030; border: 1px solid #fc8181; }
 
-.action-buttons {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+/* Status Colors */
+.status-completed { color: var(--success); }
+.status-pending   { color: var(--warning); }
+.status-rejected  { color: var(--error); }
+
+.action-buttons { display: flex; gap: 0.5rem; }
+
+.badge-earning {
+    background: #e6fffa;
+    color: #2c7a7b;
+    border: 1px solid #b2f5ea;
 }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 </style>
-<div class="dashboard-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-    <div class="stat-card" style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border);">
-        <div style="font-size: 0.9rem; color: var(--text-muted);">Platform Balance</div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary);">
+
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+            <i class="fas fa-wallet"></i> Platform Funds
+        </div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary);">
             ₱{{ "%.2f"|format(admin.wallet_balance) if admin else '0.00' }}
         </div>
-    </div>
-    
-    <div class="stat-card" style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border);">
-        <div style="font-size: 0.9rem; color: var(--text-muted);">Pending Refunds</div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: var(--warning);">
-            ₱{{ "%.2f"|format(refunds|sum(attribute='amount')) }}
+        <div style="font-size: 0.8rem; color: var(--success); margin-top: 0.5rem;">
+            <i class="fas fa-check-circle"></i> Available Balance
         </div>
     </div>
     
-    <div class="stat-card" style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border);">
-        <div style="font-size: 0.9rem; color: var(--text-muted);">Total Escrow</div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: var(--success);">
+    <div class="stat-card">
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+            <i class="fas fa-hand-holding-usd"></i> Active Escrow
+        </div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: var(--info);">
             ₱{{ "%.2f"|format(total_escrow) }}
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+            Held for Active Jobs
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+            <i class="fas fa-undo"></i> Pending Refunds
+        </div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: var(--warning);">
+            ₱{{ "%.2f"|format(refunds|sum(attribute='amount')|abs) }}
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+            {{ refunds|length }} request(s) pending
         </div>
     </div>
 </div>
+
 <div class="dashboard-container">
 
     <div class="tabs">
-        <!-- CHANGE THIS LINE -->
-        <button class="tab-btn active" onclick="showTab('refunds', event)">Refund Requests</button>
-        <button class="tab-btn" onclick="showTab('transactions', event)">All Transactions</button>
+        <button class="tab-btn active" onclick="showTab('transactions', event)">All Transactions</button>
+        <button class="tab-btn" onclick="showTab('refunds', event)">Refund Requests</button>
         <button class="tab-btn" onclick="showTab('payments', event)">Errand Payments</button>
     </div>
 
-    <div id="refunds-tab" class="tab-content active">
+    <div id="transactions-tab" class="tab-content active">
         <div class="table-container">
             <div class="table-header">
-                <div>ID</div><div>Date</div><div>User</div>
-                <div>Amount</div><div>Reason</div><div>Status</div><div>Actions</div>
+                <div>ID</div>
+                <div>Date</div>
+                <div>User</div>
+                <div>Type</div>
+                <div>Amount</div>
+                <div>Description / Status</div>
+                <div>Actions</div>
+            </div>
+
+            {% for transaction in all_transactions %}
+            <div class="table-row">
+                <div style="font-family: monospace; color: var(--text-muted);">#{{ transaction.id }}</div>
+                
+                <div style="font-size: 0.9rem;">
+                    <div>{{ transaction.created_at.strftime('%b %d, %Y') }}</div>
+                    <div style="color: var(--text-muted); font-size: 0.8rem;">{{ transaction.created_at.strftime('%H:%M') }}</div>
+                </div>
+
+                <div class="user-cell">
+                    <div class="user-name">{{ transaction.user.username }}</div>
+                    <div class="user-role">{{ transaction.user.role }}</div>
+                </div>
+
+                <div>
+                    {% set type_class = 'type-credit' %}
+                    {% if 'withdrawal' in transaction.transaction_type %}{% set type_class = 'type-withdrawal' %}
+                    {% elif 'deposit' in transaction.transaction_type %}{% set type_class = 'type-deposit' %}
+                    {% elif 'payment' in transaction.transaction_type %}{% set type_class = 'type-payment' %}
+                    {% elif 'debit' in transaction.transaction_type %}{% set type_class = 'type-debit' %}
+                    {% elif 'refund' in transaction.transaction_type %}{% set type_class = 'type-refund' %}
+                    {% endif %}
+                    
+                    <span class="badge {{ type_class }}">
+                        {% if 'withdrawal' in transaction.transaction_type %}<i class="fas fa-arrow-up"></i>
+                        {% elif 'deposit' in transaction.transaction_type %}<i class="fas fa-arrow-down"></i>
+                        {% elif 'refund' in transaction.transaction_type %}<i class="fas fa-undo"></i>
+                        {% else %}<i class="fas fa-circle" style="font-size: 0.5rem;"></i>{% endif %}
+                        {{ transaction.transaction_type }}
+                    </span>
+                </div>
+
+                <div class="amount-cell {% if transaction.amount > 0 %}amount-positive{% elif transaction.amount < 0 %}amount-negative{% else %}amount-neutral{% endif %}">
+                    {% if transaction.amount > 0 %}+{% endif %}₱{{ "%.2f"|format(transaction.amount) }}
+                </div>
+
+                <div class="description-cell">
+                    <div>{{ transaction.description }}</div>
+                    
+                    <div style="margin-top: 0.25rem; font-size: 0.8rem;">
+                        <strong>Status: </strong>
+                        <span class="status-{{ transaction.status }}">{{ transaction.status|upper }}</span>
+                        <span style="color: var(--text-muted);"> | Bal: ₱{{ "%.2f"|format(transaction.balance_after) }}</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    {% if transaction.transaction_type == 'withdrawal' and transaction.status == 'pending' %}
+                        <a href="{{ url_for('main.approve_withdrawal', transaction_id=transaction.id) }}" 
+                           class="btn btn-success btn-sm" title="Approve Withdrawal">
+                            <i class="fas fa-check"></i>
+                        </a>
+                        <form method="POST" action="{{ url_for('main.reject_withdrawal', transaction_id=transaction.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm" 
+                                    onclick="let r = prompt('Reason for rejection:'); if(r){this.form.reason.value=r; return true;} return false;"
+                                    title="Reject Withdrawal">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <input type="hidden" name="reason" value="">
+                        </form>
+                    {% else %}
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">-</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="refunds-tab" class="tab-content">
+        <div class="table-container">
+            <div class="table-header">
+                <div>ID</div><div>Date</div><div>Requester</div>
+                <div>Amount</div><div>Status</div><div>Reason</div><div>Actions</div>
             </div>
 
             {% for refund in refunds %}
@@ -181,101 +291,73 @@
                     <div class="user-role">{{ refund.user.email }}</div>
                 </div>
 
-                <div class="amount-cell amount-negative">
-                    {% if "Amount: ₱" in refund.description %}
-                        {{ refund.description.split("Amount: ₱")[1].split(".")[0] }}.
-                        {{ refund.description.split("Amount: ₱")[1].split(".")[1].split(".")[0] }}
-                    {% else %}
-                        ₱{{ "%.2f"|format(refund.amount|abs) }}
-                    {% endif %}
-                </div>
-
-                <!-- SHOW REFUND REASON -->
-                <div class="description-cell" style="max-height: none;">
-                    {{ refund.description|default('No reason provided') }}
+                <div class="amount-cell amount-positive">
+                    ₱{{ "%.2f"|format(refund.amount|abs) }}
                 </div>
 
                 <div>
-                    <span class="badge">{{ refund.status }}</span>
+                    <span class="badge" style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba;">
+                        <i class="fas fa-clock"></i> {{ refund.status }}
+                    </span>
+                </div>
+
+                <div class="description-cell">
+                    {{ refund.description|default('No reason provided') }}
                 </div>
 
                 <div class="action-buttons">
-                {% if refund.status == 'pending' %}
-                    <a href="{{ url_for('main.approve_refund', transaction_id=refund.id) }}" class="btn btn-success btn-sm">Approve</a>
+                    <a href="{{ url_for('main.approve_refund', transaction_id=refund.id) }}" class="btn btn-success btn-sm" title="Approve">
+                        <i class="fas fa-check"></i> Approve
+                    </a>
                     <form method="POST" action="{{ url_for('main.reject_refund', transaction_id=refund.id) }}" style="display: inline;">
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Reject this refund request?')">
-                            Reject
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Reject this refund request?')" title="Reject">
+                            <i class="fas fa-times"></i> Reject
                         </button>
                         <input type="hidden" name="reason" value="Refund request rejected by admin">
                     </form>
-                {% else %}
-                    <span>Processed</span>
-                {% endif %}
                 </div>
+            </div>
+            {% else %}
+            <div style="padding: 3rem; text-align: center; color: var(--text-muted);">
+                <i class="fas fa-check-circle" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p>No pending refund requests.</p>
             </div>
             {% endfor %}
         </div>
     </div>
 
-    <!-- TRANSACTIONS TAB -->
-    <div id="transactions-tab" class="tab-content">
-        <div class="table-container">
-            <div class="table-header">
-                <div>ID</div><div>Date</div><div>User</div>
-                <div>Type</div><div>Amount</div><div>Description</div><div>Balance</div>
-            </div>
-
-            {% for transaction in all_transactions %}
-            <div class="table-row">
-                <div>#{{ transaction.id }}</div>
-                <div>{{ transaction.created_at.strftime('%m/%d %H:%M') }}</div>
-
-                <div class="user-cell">
-                    <div class="user-name">{{ transaction.user.username }}</div>
-                    <div class="user-role">{{ transaction.user.role }}</div>
-                </div>
-
-                <div class="type-cell">
-                    <span class="badge">{{ transaction.transaction_type }}</span>
-                </div>
-
-                <div class="amount-cell {% if transaction.amount > 0 %}amount-positive{% else %}amount-negative{% endif %}">
-                    {% if transaction.amount > 0 %}+{% endif %}₱{{ "%.2f"|format(transaction.amount) }}
-                </div>
-
-                <div class="description-cell">{{ transaction.description }}</div>
-
-                <div class="balance-cell">
-                    ₱{{ "%.2f"|format(transaction.balance_after) }}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- PAYMENTS TAB -->
     <div id="payments-tab" class="tab-content">
         <div class="table-container">
             <div class="table-header">
-                <div>ID</div><div>Date</div><div>Errand</div>
-                <div>Client → Runner</div><div>Amount</div><div>Status</div><div>Actions</div>
+                <div>ID</div><div>Date</div><div>Category</div>
+                <div>Participants</div><div>Amount</div><div>Status</div><div>Actions</div>
             </div>
 
             {% for payment in payments %}
             <div class="table-row">
                 <div>#{{ payment.id }}</div>
-                <div>{{ payment.created_at.strftime('%m/%d %H:%M') }}</div>
+                <div>{{ payment.created_at.strftime('%m/%d') }}</div>
                 <div>{{ payment.errand.category }}</div>
-                <div>{{ payment.client.username }} → {{ payment.runner.username if payment.runner else 'Unassigned' }}</div>
+                
+                <div class="user-cell">
+                    <span style="font-size: 0.85rem;"><i class="fas fa-user"></i> {{ payment.client.username }}</span>
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);"><i class="fas fa-running"></i> {{ payment.runner.username if payment.runner else '---' }}</span>
+                </div>
 
-                <div class="amount-cell">
+                <div class="amount-cell amount-neutral">
                     ₱{{ "%.2f"|format(payment.amount) }}
                 </div>
 
-                <div><span class="badge">{{ payment.payment_status }}</span></div>
+                <div>
+                    <span class="badge" style="background: var(--surface); border: 1px solid var(--border);">
+                        {{ payment.payment_status }}
+                    </span>
+                </div>
 
                 <div class="action-buttons">
-                    <a href="{{ url_for('main.view_payment', payment_id=payment.id) }}" class="btn btn-secondary btn-sm">View</a>
+                    <a href="{{ url_for('main.view_payment', payment_id=payment.id) }}" class="btn btn-secondary btn-sm">
+                        Details
+                    </a>
                 </div>
             </div>
             {% endfor %}
@@ -286,9 +368,11 @@
 
 <script>
 function showTab(tab, event) {
+    // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
+    // Show selected
     document.getElementById(tab + '-tab').classList.add('active');
     event.currentTarget.classList.add('active');
 }
